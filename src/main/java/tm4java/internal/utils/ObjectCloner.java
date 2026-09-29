@@ -98,7 +98,7 @@ public final class ObjectCloner {
         var shallowClone = shallowClone(source, () -> source);
         buffer.put(source, shallowClone);
 
-        return source;
+        return shallowClone;
     }
 
     private static @Nullable <T> T deepCloneNullable(@Nullable T source,
