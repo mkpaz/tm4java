@@ -5,7 +5,6 @@ module tm4java {
     requires static org.jspecify;    // compile time only
     requires static com.google.gson; // optional
 
-    requires org.jruby.joni; // textmate regex engine
     requires java.xml;       // plist format support
 
     exports tm4java;

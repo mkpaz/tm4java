@@ -9,8 +9,9 @@
 
 package tm4java.internal.grammar.oniguruma;
 
-import java.util.Arrays;
 import org.jspecify.annotations.Nullable;
+
+import java.util.Arrays;
 
 /**
  * Represents a match result from an {@link OnigScanner}.
@@ -64,10 +65,10 @@ public final class OnigScannerMatch {
     @Override
     public String toString() {
         var result = new StringBuilder("{\n")
-                         .append("  \"index\": ")
-                         .append(index)
-                         .append(",\n")
-                         .append("  \"captureIndices\": [\n");
+            .append("  \"index\": ")
+            .append(index)
+            .append(",\n")
+            .append("  \"captureIndices\": [\n");
 
         int i = 0;
         for (OnigCaptureIndex captureIndex : captureIndices) {
@@ -87,23 +88,28 @@ public final class OnigScannerMatch {
     }
 
     /**
-     * Extracts the capture indices from the given OnigResult and OnigString.
+     * Extracts the capture indices from the given {@code OnigResult} and {@code OnigString}.
      *
-     * @param result the OnigResult object containing the match information
-     * @param source the OnigString object representing the source string
-     * @return an array of OnigCaptureIndex objects representing the capture indices
+     * @param result the {@code OnigResult} object containing the match information
+     * @param source the {@code OnigResult} object representing the source string
+     * @return an array of {@code OnigCaptureIndex} objects representing the capture indices
      */
     private OnigCaptureIndex[] captureIndicesOfMatch(OnigResult result, OnigString source) {
         int resultCount = result.count();
         var captures = new OnigCaptureIndex[resultCount];
 
         for (int i = 0; i < resultCount; i++) {
-            int loc = result.locationAt(i);
-            int captureStart = source.getCharIndexOfByte(loc);
-            int captureEnd = source.getCharIndexOfByte(loc + result.lengthAt(i));
-            captures[i] = captureStart == 0 && captureEnd == 0
-                              ? OnigCaptureIndex.EMPTY
-                              : new OnigCaptureIndex(captureStart, captureEnd);
+            int begByte = result.locationAt(i);
+            int lengthByte = result.lengthAt(i);
+
+            // in the Oniguruma C API, begByte is -1 for an unmatched group
+            if (begByte < 0 || lengthByte < 0) {
+                captures[i] = OnigCaptureIndex.EMPTY;
+            } else {
+                int captureStart = source.getCharIndexOfByte(begByte);
+                int captureEnd = source.getCharIndexOfByte(begByte + lengthByte);
+                captures[i] = new OnigCaptureIndex(captureStart, captureEnd);
+            }
         }
 
         return captures;

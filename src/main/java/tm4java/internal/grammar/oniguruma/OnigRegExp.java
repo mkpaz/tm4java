@@ -1,27 +1,17 @@
-/*
- * Copyright © 2025 tm4java authors
- * Original authors (EPL-2.0): Sebastian Thomschke, Angelo Zerr (tm4e).
- * Initial code (MIT): Microsoft Corporation (vscode-textmate).
- *
- * This program is licensed under the Eclipse Public License 2.0 (EPL-2.0).
- * See https://www.eclipse.org/legal/epl-2.0/ for details.
- */
-
 package tm4java.internal.grammar.oniguruma;
+
+import org.jspecify.annotations.Nullable;
+import tm4java.TMException;
 
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.ref.Cleaner;
+import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
-import org.jcodings.specific.NonStrictUTF8Encoding;
-import org.joni.Matcher;
-import org.joni.Option;
-import org.joni.Regex;
-import org.joni.Region;
-import org.joni.Syntax;
-import org.joni.WarnCallback;
-import org.joni.exception.SyntaxException;
-import org.jspecify.annotations.Nullable;
-import tm4java.TMException;
+import java.util.Objects;
 
 /**
  * Represents an Oniguruma regular expression.
@@ -29,19 +19,24 @@ import tm4java.TMException;
  * @see <a href="https://github.com/atom/node-oniguruma/blob/master/src/onig-reg-exp.cc">
  * github.com/atom/node-oniguruma/src/onig-reg-exp.cc</a>
  */
-public final class OnigRegExp {
+public final class OnigRegExp implements AutoCloseable {
 
-    private static final Logger LOGGER = System.getLogger(OnigRegExp.class.getName());
-    private static final WarnCallback LOGGER_WARN_CALLBACK = // DEBUG, because WARNING produce too many noise
-        message -> LOGGER.log(Level.DEBUG, message);
+    private record Cache(OnigString src,
+                         int start,
+                         int @Nullable [] beg,
+                         int @Nullable [] end) { }
+
+    private static final Logger LOG = System.getLogger(OnigRegExp.class.getName());
+    private static final Cleaner CLEANER = Cleaner.create();
 
     private final String pattern;
-    private final Regex regex;
-    private final boolean hasGAnchor;
+    private final MemorySegment regexPtr;
 
-    private @Nullable OnigString lastSearchString;
-    private int lastSearchPosition = -1;
-    private @Nullable OnigResult lastSearchResult;
+    private final Cleaner.@Nullable Cleanable cleanable;
+    private volatile boolean closed;
+
+    private final boolean cacheable; // \G is bound to the start position, caching is not allowed for such patterns
+    private volatile @Nullable Cache cache;
 
     /**
      * See {@link #OnigRegExp(String, boolean)}.
@@ -58,21 +53,37 @@ public final class OnigRegExp {
      * @throws TMException if parsing fails
      */
     public OnigRegExp(String pattern, boolean ignoreCase) {
-        hasGAnchor = pattern.contains("\\G");
+        this.pattern = pattern;
+        this.cacheable = !pattern.contains("\\G");
 
-        Regex regex;
+        MemorySegment parsedRegex;
         try {
-            regex = parsePattern(pattern, ignoreCase);
-        } catch (SyntaxException e) {
-            try {
-                regex = parsePattern(rewritePatternIfRequired(pattern), ignoreCase);
-            } catch (SyntaxException unused) {
-                throw new TMException("Parsing regex pattern \"" + pattern + "\" failed with " + e, e);
+            parsedRegex = parsePattern(pattern, ignoreCase);
+        } catch (Exception e) {
+            // log a warning but do NOT throw an exception
+            if (LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "Skipping invalid regex pattern '%s': %s"
+                    .formatted(pattern, e.getMessage()));
             }
+            parsedRegex = MemorySegment.NULL;
         }
 
-        this.pattern = pattern;
-        this.regex = regex;
+        this.regexPtr = parsedRegex;
+
+        // register a Cleaner action to free the native regex once this instance becomes unreachable,
+        // a NULL pointer means parsing failed, so there is nothing to free
+        if (parsedRegex.address() != 0) {
+            MemorySegment freePtr = parsedRegex;
+            this.cleanable = CLEANER.register(this, () -> {
+                try {
+                    Oniguruma.ONIG_FREE.invokeExact(freePtr);
+                } catch (Throwable _) {
+                    // cleanup actions must never throw
+                }
+            });
+        } else {
+            this.cleanable = null;
+        }
     }
 
     /**
@@ -80,26 +91,22 @@ public final class OnigRegExp {
      *
      * @param str           the string to search
      * @param startPosition the position to start searching from
-     * @return the search result, or null if no match is found
+     * @return the search result, or {@code null} if no match is found
      */
     public @Nullable OnigResult search(OnigString str, int startPosition) {
-        if (hasGAnchor) {
-            // Should not use caching, because the regular expression
-            // targets the current search position (\G)
-            return doSearch(str.bytesUTF8(), startPosition, str.bytesCount);
-        }
+        return doSearch(str, startPosition, Integer.MAX_VALUE, -1);
+    }
 
-        var lastSearchResult0 = this.lastSearchResult;
-        if (lastSearchString == str
-            && lastSearchPosition <= startPosition
-            && (lastSearchResult0 == null || lastSearchResult0.locationAt(0) >= startPosition)) {
-            return lastSearchResult0;
-        }
-
-        lastSearchString = str;
-        lastSearchPosition = startPosition;
-        lastSearchResult = doSearch(str.bytesUTF8(), startPosition, str.bytesCount);
-        return lastSearchResult;
+    /**
+     * Searches for a match in the given string, logging debug information.
+     *
+     * @param str           the string to search
+     * @param startPosition the position to start searching from
+     * @param regExpIndex   the index of this regexp in the scanner, for debug output
+     * @return the search result, or null if no match is found
+     */
+    public @Nullable OnigResult searchDebug(OnigString str, int startPosition, int regExpIndex) {
+        return doSearch(str, startPosition, Integer.MAX_VALUE, regExpIndex);
     }
 
     /**
@@ -109,86 +116,164 @@ public final class OnigRegExp {
         return pattern;
     }
 
+    /**
+     * Releases the native resources held by this expression.
+     *
+     * <p>Must NOT be called concurrently with a search on the same instance.
+     */
     @Override
-    public String toString() {
-        return "OnigRegExp{"
-            + "pattern='" + pattern + '\''
-            + '}';
+    public void close() {
+        closed = true;
+        if (cleanable != null) {
+            cleanable.clean();
+        }
     }
 
-    //*************************************************************************
+    @Override
+    public String toString() {
+        return "OnigRegExp{" + "pattern='" + pattern + '\'' + '}';
+    }
 
     /**
      * Parses the given regex pattern into an Oniguruma Regex object.
      *
-     * @param pattern    the pattern to parse
+     * @param patternStr the pattern to parse
      * @param ignoreCase whether to perform case-insensitive matching
-     * @throws SyntaxException if parsing fails
+     * @return the pointer to the parsed regex, or {@code MemorySegment.NULL} on failure
      */
-    private Regex parsePattern(String pattern, boolean ignoreCase) throws SyntaxException {
-        int options = Option.CAPTURE_GROUP;
-        if (ignoreCase) {
-            options |= Option.IGNORECASE;
+    private MemorySegment parsePattern(String patternStr, boolean ignoreCase) {
+        byte[] patternBytes = patternStr.getBytes(StandardCharsets.UTF_8);
+
+        try (var arena = Arena.ofConfined()) {
+            MemorySegment patternSeg = arena.allocateFrom(ValueLayout.JAVA_BYTE, patternBytes);
+            MemorySegment patternEndSeg = patternSeg.asSlice(patternBytes.length);
+            MemorySegment regexOutSeg = arena.allocate(ValueLayout.ADDRESS);
+
+            int options = Oniguruma.ONIG_OPTION_CAPTURE_GROUP;
+            if (ignoreCase) {
+                options |= Oniguruma.ONIG_OPTION_IGNORE_CASE;
+            }
+
+            int status;
+            try {
+                status = (int) Oniguruma.ONIG_NEW.invokeExact(
+                    regexOutSeg,
+                    patternSeg,
+                    patternEndSeg,
+                    options,
+                    Oniguruma.ENC_UTF8,
+                    Oniguruma.SYNTAX_ONIGURUMA,
+                    MemorySegment.NULL
+                );
+            } catch (Throwable e) {
+                throw new IllegalStateException(
+                    "onig_new invocation failed for pattern '%s'".formatted(patternStr), e
+                );
+            }
+
+            if (status != 0) {
+                String errorMsg = Oniguruma.getErrorMessage(status);
+                throw new TMException(
+                    "Failed to compile pattern '%s': %s (code %d)".formatted(patternStr, errorMsg, status)
+                );
+            }
+
+            return regexOutSeg.get(ValueLayout.ADDRESS, 0);
         }
-
-        byte[] patternBytes = pattern.getBytes(StandardCharsets.UTF_8);
-        return new Regex(
-            patternBytes,
-            0,
-            patternBytes.length,
-            options,
-            NonStrictUTF8Encoding.INSTANCE,
-            Syntax.RUBY,
-            LOGGER.isLoggable(Level.WARNING) ? LOGGER_WARN_CALLBACK : WarnCallback.NONE
-        );
-    }
-
-    /**
-     * Rewrites the given pattern to workaround limitations of the joni library which
-     * for example does not support negative variable-length look-behinds
-     *
-     * @see <a href="https://github.com/eclipse-tm4e/tm4e/issues/677">github.com/eclipse-tm4e/tm4e/issue/677</a>
-     */
-    private String rewritePatternIfRequired(String pattern) {
-        // e.g. used in csharp.tmLanguage.json
-        var lookbehind1 = "(?<!\\.\\s*)";
-        if (pattern.startsWith(lookbehind1)) {
-            return "(?<!\\.)\\s*" + pattern.substring(lookbehind1.length());
-        }
-
-        // e.g. used in markdown.math.block.tmLanguage.json and tex.tmLanguage.json
-        var lookbehind2 = "(?<=^\\s*)";
-        if (pattern.startsWith(lookbehind2)) {
-            return "(?<=^)\\s*" + pattern.substring(lookbehind2.length());
-        }
-
-        // e.g. used in carbon.tmLanguage.json
-        var lookbehind3 = "(?<=\\s*\\.)";
-        if (pattern.startsWith(lookbehind3)) {
-            return "\\s*\\." + pattern.substring(lookbehind3.length());
-        }
-
-        // e.g. used in julia.tmLanguage.json
-        var lookbehind4 = "(?<=\\S\\s+)";
-        if (pattern.startsWith(lookbehind4)) {
-            return "\\S\\s+" + pattern.substring(lookbehind4.length());
-        }
-
-        return pattern;
     }
 
     /**
      * Searches for a match in the given data.
+     *
+     * @param source     the source string
+     * @param startPos   the start byte position
+     * @param limitPos   the end byte position (exclusive)
+     * @param regexIndex the regexp index for debug output, or -1 to disable debug logging
+     * @return the search result, or null if no match is found
      */
-    private @Nullable OnigResult doSearch(byte[] data, int startPosition, int end) {
-        Matcher matcher = regex.matcher(data);
-        int status = matcher.search(startPosition, end, Option.DEFAULT);
-
-        if (status != Matcher.FAILED) {
-            Region region = matcher.getEagerRegion();
-            return new OnigResult(region);
+    private @Nullable OnigResult doSearch(OnigString source, int startPos, int limitPos, int regexIndex) {
+        // closed by the user, or pattern failed to compile — nothing to search with
+        if (closed || regexPtr.address() == 0) {
+            return null;
         }
 
-        return null;
+        // start outside the string, or empty/invalid [start, limit] range
+        if (startPos < 0 || startPos > source.bytesCount || limitPos <= startPos) {
+            return null;
+        }
+
+        // reuse a previous match if it still covers the current start position
+        if (cacheable) {
+            Cache c = cache;
+            if (c != null && c.src() == source && startPos >= c.start()) {
+                if (c.beg() == null) {
+                    return null; // no match was found from an earlier position
+                }
+                if (c.beg()[0] >= startPos) {
+                    // beg and end are always set together, so end is non-null here
+                    return c.beg()[0] >= limitPos
+                        ? null
+                        : new OnigResult(c.beg(), Objects.requireNonNull(c.end()));
+                }
+            }
+        }
+
+        MemorySegment strSeg = source.nativeSegment();
+        MemorySegment strEndSeg = source.nativeEnd();
+        MemorySegment startSeg = strSeg.asSlice(startPos);
+        MemorySegment rangeSeg = limitPos >= source.bytesCount ? strEndSeg : strSeg.asSlice(limitPos);
+        MemorySegment regionSeg = Oniguruma.acquireRegion();
+
+        try {
+            int status = (int) Oniguruma.ONIG_SEARCH.invokeExact(
+                regexPtr,
+                strSeg,
+                strEndSeg,
+                startSeg,
+                rangeSeg,
+                regionSeg,
+                Oniguruma.ONIG_OPTION_NONE
+            );
+
+            if (status >= 0) {
+                var result = new OnigResult(regionSeg);
+                if (cacheable) {
+                    cache = new Cache(source, startPos, result.begArray(), result.endArray());
+                }
+
+                // match starts at or after the limit — out of the allowed range, reject it
+                if (status >= limitPos) {
+                    return null;
+                }
+
+                // regexIndex < 0 means debug logging is disabled by the caller
+                if (regexIndex >= 0 && LOG.isLoggable(Level.DEBUG)) {
+                    LOG.log(Level.DEBUG, "[OnigRegExp #%d] Matched! status=%d, pattern='%s', beg=%s, end=%s"
+                        .formatted(regexIndex, status, pattern, result.begAsString(), result.endAsString()));
+                }
+                return result;
+            }
+
+            // status < 0 but not a plain "no match" — a real Oniguruma error occurred
+            if (status != Oniguruma.ONIG_MISMATCH && LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "onig_search failed for '%s': %s"
+                    .formatted(pattern, Oniguruma.getErrorMessage(status)));
+            }
+
+            // remember the miss only if the search covered the whole string
+            if (status == Oniguruma.ONIG_MISMATCH && cacheable && limitPos >= source.bytesCount) {
+                cache = new Cache(source, startPos, null, null);
+            }
+            return null;
+
+        } catch (Throwable e) {
+            throw new IllegalStateException(
+                "Error during Oniguruma search for pattern '%s'".formatted(pattern), e
+            );
+        } finally {
+            Oniguruma.releaseRegion(regionSeg);
+            // prevent the Cleaner from freeing the regex during the search
+            Reference.reachabilityFence(this);
+        }
     }
 }

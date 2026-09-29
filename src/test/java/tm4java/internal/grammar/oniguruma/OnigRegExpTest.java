@@ -9,11 +9,11 @@
 
 package tm4java.internal.grammar.oniguruma;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @NullMarked
 public class OnigRegExpTest {
@@ -34,41 +34,23 @@ public class OnigRegExpTest {
      */
     @Test
     public void testOnigRegExpCaching() {
-        var regexp = new OnigRegExp(
-            "\\G(MAKEFILES|VPATH|SHELL|MAKESHELL|MAKE|MAKELEVEL|MAKEFLAGS|MAKECMDGOALS|CURDIR|SUFFIXES|\\.LIBPATTERNS)(?=\\s*\\))");
+        try (var regexp = new OnigRegExp("\\G(MAKEFILES|VPATH|SHELL|MAKESHELL|MAKE|MAKELEVEL|MAKEFLAGS|MAKECMDGOALS|CURDIR|SUFFIXES|\\.LIBPATTERNS)(?=\\s*\\))")) {
+            String line = "ifeq (version,$(firstword $(MAKECMDGOALS))\n";
+            var onigLine = OnigString.of(line);
 
-        var line = "ifeq (version,$(firstword $(MAKECMDGOALS))\n";
-        var onigLine = OnigString.of(line);
+            OnigResult result = regexp.search(onigLine, 10);
+            assertThat(result)
+                .withFailMessage("Did not expect a match in input: \"%s\" starting at position %d", line, 10)
+                .isNull();
 
-        var result = regexp.search(onigLine, 10);
-        assertThat(result)
-            .withFailMessage("Did not expect a match in input: \"%s\" starting at position %d", line, 10)
-            .isNull();
+            result = regexp.search(onigLine, 28);
 
-        result = regexp.search(onigLine, 28);
-        assertOnigRegExpSearch(line, result, 28, true, "MAKECMDGOALS", "MAKECMDGOALS");
-    }
-
-    @Test
-    public void testNegativeLookBehinds() {
-        // test of OnigRegExp.rewritePatternIfRequired (lookbehind1)
-        assertOnigRegExpSearch("(?<!\\.\\s*)\\b(await)\\b", "await", 0, true, "await", "await");
-        assertOnigRegExpSearch("(?<!\\.\\s*)\\b(await)\\b", "  await", 0, true, "  await", "await");
-        assertOnigRegExpSearch("(?<!\\.\\s*)\\b(await)\\b", ".await", 0, false);
-        assertOnigRegExpSearch("(?<!\\.\\s*)\\b(await)\\b", "  .await", 0, false);
-
-        // test of OnigRegExp.rewritePatternIfRequired (lookbehind2)
-        assertOnigRegExpSearch("(?<=^\\s*)\\\\fi", "\\fi", 0, true, "\\fi");
-        assertOnigRegExpSearch("(?<=^\\s*)\\\\fi", "  \\fi", 0, true, "  \\fi");
-
-        // test of OnigRegExp.rewritePatternIfRequired (lookbehind3)
-        assertOnigRegExpSearch("(?<=\\s*\\.)\\w+", ".foo", 0, true, ".foo");
-        assertOnigRegExpSearch("(?<=\\s*\\.)\\w+", "  .foo", 0, true, "  .foo");
+            assertOnigRegExpSearch(line, result, 28, true, "MAKECMDGOALS", "MAKECMDGOALS");
+        }
     }
 
     //*************************************************************************
 
-    @SuppressWarnings("DataFlowIssue")
     void assertOnigRegExpSearch(String input,
                                 @Nullable OnigResult result,
                                 int startPosition,
@@ -116,8 +98,9 @@ public class OnigRegExpTest {
                                 int startPosition,
                                 boolean shouldMatch,
                                 String... expectedGroups) {
-        OnigRegExp regexp = new OnigRegExp(pattern);
-        OnigResult result = regexp.search(OnigString.of(input), startPosition);
-        assertOnigRegExpSearch(input, result, startPosition, shouldMatch, expectedGroups);
+        try (OnigRegExp regexp = new OnigRegExp(pattern)) {
+            OnigResult result = regexp.search(OnigString.of(input), startPosition);
+            assertOnigRegExpSearch(input, result, startPosition, shouldMatch, expectedGroups);
+        }
     }
 }

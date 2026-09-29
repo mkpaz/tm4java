@@ -13,6 +13,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Represents the index of a capture in a string.
+ *
+ * @param start the start index of the capture
+ * @param end   the end index of the capture
  */
 public record OnigCaptureIndex(int start, int end) {
 
@@ -28,7 +31,7 @@ public record OnigCaptureIndex(int start, int end) {
      * @param end   the end index of the capture
      */
     public OnigCaptureIndex(int start, int end) {
-        this.start = Math.max(start, 0);
+        this.start = Math.max(start, 0); // negative indices (unmatched groups) are clamped to zero
         this.end = Math.max(end, 0);
     }
 
