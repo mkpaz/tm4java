@@ -11,10 +11,11 @@ package tm4java.internal.grammar;
 
 import org.jspecify.annotations.Nullable;
 import tm4java.grammar.BalancedBracketSelectors;
-import tm4java.grammar.IToken;
 import tm4java.grammar.EncodedTokenAttributes;
+import tm4java.grammar.IToken;
 import tm4java.internal.grammar.tokenattrs.OptionalStandardTokenType;
 import tm4java.internal.theme.FontStyle;
+import tm4java.internal.utils.StringUtils;
 
 import java.lang.System.Logger;
 import java.util.*;
@@ -36,6 +37,7 @@ final class LineTokens {
     private final int origLineLength;
     private final List<TokenTypeMatcher> tokenTypeOverrides;
     private final @Nullable BalancedBracketSelectors balancedBracketSelectors;
+    private final boolean mergeConsecutiveTokensWithEqualMetadata;
     private final Deque<Token> tokens;        // used only if emitBinaryTokens is false
     private final List<Integer> binaryTokens; // used only if emitBinaryTokens is true.
 
@@ -51,6 +53,7 @@ final class LineTokens {
         this.tokenTypeOverrides = tokenTypeOverrides;
         this.lineText = LOGGER.isLoggable(TRACE) ? lineText : ""; // store line only if it's logged
         this.origLineLength = origLineLength;
+        this.mergeConsecutiveTokensWithEqualMetadata = this.emitBinaryTokens && !StringUtils.containsRTL(lineText);
 
         if (this.emitBinaryTokens) {
             this.tokens = EMPTY_DEQUE;
@@ -117,7 +120,8 @@ final class LineTokens {
                 );
             }
 
-            if (!binaryTokens.isEmpty() && binaryTokens.getLast() == metadata) {
+            if (mergeConsecutiveTokensWithEqualMetadata && !this.binaryTokens.isEmpty()
+                && binaryTokens.getLast() == metadata) {
                 // no need to push a token with the same metadata
                 lastTokenEndIndex = endIndex;
                 return;
