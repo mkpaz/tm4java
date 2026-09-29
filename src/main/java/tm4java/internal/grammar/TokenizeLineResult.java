@@ -14,10 +14,12 @@ import tm4java.grammar.ITokenizeLineResult;
 /**
  * Result of the line tokenization implementation.
  *
+ * @param <T>          the concrete type of token sequence returned
+ * @param tokens       the collection of tokens generated for the line
+ * @param ruleStack    the state stack representing the grammar rules active at the end of the line
+ * @param stoppedEarly {@code true} if tokenization was halted before reaching the end of the line
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/main.ts#L219">
  * vscode-textmate/src/main.ts#L219</a>
  */
-record TokenizeLineResult<T>(T tokens,
-                             StateStack ruleStack,
-                             boolean stoppedEarly) implements ITokenizeLineResult<T> {
-}
+record TokenizeLineResult<T>(T tokens, StateStack ruleStack, boolean stoppedEarly)
+    implements ITokenizeLineResult<T> { }

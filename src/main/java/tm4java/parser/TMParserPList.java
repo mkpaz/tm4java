@@ -9,9 +9,15 @@
 
 package tm4java.parser;
 
-import static java.lang.System.Logger.Level.ERROR;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import org.jspecify.annotations.Nullable;
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+import tm4java.parser.PropertyPath.ListBasedPropertyPath;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.SAXParserFactory;
 import java.io.ByteArrayInputStream;
 import java.io.Reader;
 import java.lang.System.Logger;
@@ -20,18 +26,13 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.xml.XMLConstants;
-import javax.xml.parsers.SAXParserFactory;
-import org.jspecify.annotations.Nullable;
-import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
-import tm4java.parser.PropertyPath.ListBasedPropertyPath;
+
+import static java.lang.System.Logger.Level.ERROR;
+import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
 
 /**
- * A JDK DOM-based implementation of the {@link TMParser} for parsing
- * PList documents into a PropertySettable hierarchical structure.
+ * A DOM-based implementation of the {@link TMParser} for parsing
+ * Plist documents into a {@link PropertySettable} hierarchical structure.
  */
 public final class TMParserPList implements TMParser {
 

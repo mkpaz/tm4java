@@ -15,5 +15,4 @@ package tm4java.internal.grammar.rule;
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L40">
  * vscode-textmate/src/rule.ts</a>
  */
-public interface IRuleFactoryHelper extends IRuleRegistry, IGrammarRegistry {
-}
+public interface IRuleFactoryHelper extends IRuleRegistry, IGrammarRegistry { }

@@ -18,16 +18,20 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Represents a set of options to be passed to the default {@link Registry}.
+ * Represents a set of options passed to the default {@link Registry} to configure
+ * theme initialization, grammar retrieval, and scope injections.
  *
- * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/main.ts#L22">vscode-textmate/src/main.ts#L22"</a>
+ * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/main.ts#L22">
+ * vscode-textmate/src/main.ts#L22</a>
  */
 public interface IRegistryOptions {
 
     /**
      * Returns the raw theme used to create the default registry theme.
-     * <p>
-     * See {@link Theme#createFromRawTheme(IRawTheme, List)}
+     *
+     * <p>See {@link Theme#createFromRawTheme(IRawTheme, List)}
+     *
+     * @return the initial {@link IRawTheme}, or {@code null} if no theme is configured
      */
     default @Nullable IRawTheme getTheme() {
         return null;
@@ -35,8 +39,10 @@ public interface IRegistryOptions {
 
     /**
      * Returns the color map used to create the default registry theme.
-     * <p>
-     * See {@link Theme#createFromRawTheme(IRawTheme, List)}
+     *
+     * <p>See {@link Theme#createFromRawTheme(IRawTheme, List)}
+     *
+     * @return an initial list of HEX color strings for the color map palette, or {@code null}
      */
     default @Nullable List<String> getColorMap() {
         return null;
@@ -44,6 +50,7 @@ public interface IRegistryOptions {
 
     /**
      * Creates the grammar source used to load grammar by a specified scope name.
+     *
      * <pre>{@code
      * public IGrammarSource getGrammarSource(String scopeName) {
      *      return switch (scopeName) {
@@ -53,6 +60,9 @@ public interface IRegistryOptions {
      *      };
      * }
      * }</pre>
+     *
+     * @param scopeName the TextMate target scope name (e.g. {@code "source.java"})
+     * @return the {@link IGrammarSource} for the requested scope, or {@code null} if not found
      */
     default @Nullable IGrammarSource getGrammarSource(String scopeName) {
         return null;
@@ -60,9 +70,12 @@ public interface IRegistryOptions {
 
     /**
      * Returns the list of injected grammars for the specified scope name.
-     * <p>
-     * For example, Angular template-ng files can contain CSS and TypeScript
+     *
+     * <p>For example, Angular template-ng files can contain CSS and TypeScript
      * injections covered by other grammars.
+     *
+     * @param scopeName the TextMate scope name to query for injections
+     * @return a collection of grammar scope names to inject, or {@code null} if none
      */
     default @Nullable Collection<String> getInjections(String scopeName) {
         return null;
@@ -71,10 +84,11 @@ public interface IRegistryOptions {
     //*************************************************************************
 
     /**
-     * Creates default registry options.
+     * Creates default registry options with empty/null implementations.
+     *
+     * @return a default instance of {@link IRegistryOptions}
      */
     static IRegistryOptions createDefault() {
-        return new IRegistryOptions() {
-        };
+        return new IRegistryOptions() { };
     }
 }

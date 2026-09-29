@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * A NanoJson-based implementation of the {@link TMParser} for parsing JSON documents
- * into a PropertySettable hierarchical structure.
+ * into a {@link PropertySettable} hierarchical structure.
  */
 public final class TMParserNanoJson implements TMParser {
 

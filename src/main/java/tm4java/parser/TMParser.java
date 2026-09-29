@@ -14,16 +14,23 @@ import java.io.Reader;
 /**
  * An interface for parsing input data into a hierarchical structure
  * of {@link PropertySettable} objects.
+ *
+ * <p>Implementations of this interface (such as JSON or Plist parsers) read text
+ * streams and construct nested object/array trees using the provided {@link ObjectFactory}.
+ *
+ * @see PropertySettable
+ * @see ObjectFactory
  */
 public interface TMParser {
 
     /**
      * Parses the given source into a PropertySettable object.
      *
-     * @param <T>     the type of the value
-     * @param source  the source data to parse
-     * @param factory the factory for creating PropertySettable objects
-     * @throws Exception if parsing fails
+     * @param <T>     the root type of the resulting {@link PropertySettable} structure
+     * @param source  the {@link Reader} stream providing the raw input content (e.g. JSON or Plist XML)
+     * @param factory the {@link ObjectFactory} responsible for instantiating root and child nodes
+     * @return the populated root {@code PropertySettable} instance
+     * @throws Exception if an I/O error occurs or the input format is invalid
      */
     <T extends PropertySettable<?>> T parse(Reader source, ObjectFactory<T> factory) throws Exception;
 }

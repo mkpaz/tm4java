@@ -24,25 +24,55 @@ import static java.lang.System.Logger.Level.TRACE;
 import static tm4java.internal.utils.CollectionUtils.getElementAt;
 
 /**
+ * Accumulates and builds tokens (either human-readable or encoded binary tokens)
+ * produced during the line tokenization process.
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammar.ts#L945">
  * vscode-textmate/src/grammar/grammar.ts#L945</a>
  */
 final class LineTokens {
 
     private static final Logger LOGGER = System.getLogger(LineTokens.class.getName());
+
+    /** Reusable empty deque instance to avoid allocations when binary mode is active. */
     private static final Deque<Token> EMPTY_DEQUE = new ArrayDeque<>(0);
 
+    /** Flag indicating whether tokens are emitted as encoded binary integers or object instances. */
     private final boolean emitBinaryTokens;
-    private final String lineText;            // defined only if LOGGER.isLoggable(TRACE)
+
+    /** The raw input line string, captured for TRACE logging purposes only. */
+    private final String lineText; // defined only if LOGGER.isLoggable(TRACE)
+
+    /** Original line length before any internal modifications (such as appended newline chars). */
     private final int origLineLength;
+
+    /** Overrides applied to specific scope patterns to change their token type metadata. */
     private final List<TokenTypeMatcher> tokenTypeOverrides;
+
+    /** Selectors used to determine if tokens contain balanced brackets. */
     private final @Nullable BalancedBracketSelectors balancedBracketSelectors;
+
+    /** Indicates whether adjacent tokens sharing identical metadata should be merged into one. */
     private final boolean mergeConsecutiveTokensWithEqualMetadata;
-    private final Deque<Token> tokens;        // used only if emitBinaryTokens is false
+
+    /** Storage for object-based tokens, active when {@link #emitBinaryTokens} is {@code false}. */
+    private final Deque<Token> tokens; // used only if emitBinaryTokens is false
+
+    /** Storage for encoded binary token pairs (start index, metadata), active when {@link #emitBinaryTokens} is {@code true}. */
     private final List<Integer> binaryTokens; // used only if emitBinaryTokens is true.
 
+    /** End offset of the previously produced token within the line. */
     private int lastTokenEndIndex = 0;
 
+    /**
+     * Constructs a new {@code LineTokens} builder instance.
+     *
+     * @param emitBinaryTokens         {@code true} to produce compact binary-encoded metadata tokens
+     * @param lineText                 the original input line string
+     * @param origLineLength           the initial character length of the line
+     * @param tokenTypeOverrides       matching rules for overriding default token types
+     * @param balancedBracketSelectors matcher for determining balanced bracket token attributes
+     */
     LineTokens(boolean emitBinaryTokens,
                String lineText,
                int origLineLength,
@@ -66,10 +96,23 @@ final class LineTokens {
         this.balancedBracketSelectors = balancedBracketSelectors;
     }
 
+    /**
+     * Emits a token using the scope attributes provided by the current state stack node.
+     *
+     * @param stack    the active state stack node
+     * @param endIndex the exclusive end character index for the token
+     */
     void produce(StateStack stack, int endIndex) {
         produceFromScopes(stack.contentNameScopesList, endIndex);
     }
 
+    /**
+     * Emits a token spanning from {@link #lastTokenEndIndex} up to {@code endIndex} with scopes
+     * derived from the provided scope stack.
+     *
+     * @param scopesList the scope stack representing active TextMate scopes, or {@code null}
+     * @param endIndex   the exclusive end character index for the token
+     */
     void produceFromScopes(@Nullable AttributedScopeStack scopesList, int endIndex) {
         if (lastTokenEndIndex >= endIndex) {
             return;
@@ -178,6 +221,13 @@ final class LineTokens {
         lastTokenEndIndex = endIndex;
     }
 
+    /**
+     * Finalizes and returns the collected tokens as an array of {@link IToken} objects.
+     *
+     * @param stack      the state stack at the end of the line
+     * @param lineLength total character length of the line
+     * @return an array of produced {@link IToken} objects
+     */
     IToken[] getResult(StateStack stack, int lineLength) {
         if (!tokens.isEmpty() && tokens.getLast().getStartIndex() == lineLength - 1) {
             // pop produced token for newline
@@ -193,6 +243,15 @@ final class LineTokens {
         return tokens.toArray(IToken[]::new);
     }
 
+    /**
+     * Finalizes and returns the collected binary tokens as a flattened integer array.
+     *
+     * <p>The returned array consists of pairs: {@code [startIndex_0, metadata_0, startIndex_1, metadata_1, ...]}.
+     *
+     * @param stack      the state stack at the end of the line
+     * @param lineLength total character length of the line
+     * @return an integer array containing encoded binary token ranges and metadata
+     */
     int[] getBinaryResult(StateStack stack, int lineLength) {
         if (!binaryTokens.isEmpty() && getElementAt(binaryTokens, -2) == lineLength - 1) {
             // pop produced token for newline
@@ -211,12 +270,27 @@ final class LineTokens {
 
     //*************************************************************************
 
+    /**
+     * Default implementation of {@link IToken} used when binary token emission is disabled.
+     */
     private static final class Token implements IToken {
 
+        /** The starting character index (inclusive) of the token within the line. */
         private int startIndex;
+
+        /** The ending character index (exclusive) of the token within the line. */
         private final int endIndex;
+
+        /** The list of active TextMate scope names applied to this token. */
         private final List<String> scopes;
 
+        /**
+         * Constructs a new token.
+         *
+         * @param startIndex starting character offset (inclusive)
+         * @param endIndex   ending character offset (exclusive)
+         * @param scopes     list of active scope names
+         */
         Token(int startIndex, int endIndex, List<String> scopes) {
             this.startIndex = startIndex;
             this.endIndex = endIndex;
@@ -228,6 +302,11 @@ final class LineTokens {
             return startIndex;
         }
 
+        /**
+         * Updates the starting character index of this token.
+         *
+         * @param startIndex new starting character offset
+         */
         void setStartIndex(int startIndex) {
             this.startIndex = startIndex;
         }

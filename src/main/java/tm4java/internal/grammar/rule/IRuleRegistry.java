@@ -14,6 +14,9 @@ import java.util.function.Function;
 /**
  * A registry for managing and retrieving rules.
  *
+ * <p>Responsible for allocating unique {@link RuleId} instances and storing instantiated
+ * {@link Rule} objects for access during grammar compilation and tokenization.
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L31">
  * vscode-textmate/src/rule.ts#L31</a>
  */
@@ -23,6 +26,7 @@ public interface IRuleRegistry {
      * Retrieves a rule by its id.
      *
      * @param ruleId the internal ID of the rule
+     * @return the resolved {@link Rule} instance associated with the specified ID
      * @throws IndexOutOfBoundsException if no rule with the given id was found
      */
     Rule getRule(RuleId ruleId);

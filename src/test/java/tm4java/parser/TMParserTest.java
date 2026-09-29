@@ -67,7 +67,7 @@ public class TMParserTest {
 
     @Test
     public void testParseCapturesPList() throws Exception {
-        // test capture defined as PList dict
+        // test capture defined as Plist dict
         validateCaptures(TMParserPList.instance().parse(new StringReader("""
             <plist version="1.0">
             <dict>
@@ -93,7 +93,7 @@ public class TMParserTest {
             </dict>
             </plist>"""), RawGrammar.OBJECT_FACTORY));
 
-        // test capture defined as PList array
+        // test capture defined as Plist array
         validateCaptures(TMParserPList.instance().parse(new StringReader("""
             <plist version="1.0">
             <dict>

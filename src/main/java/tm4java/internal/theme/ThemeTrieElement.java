@@ -18,37 +18,71 @@ import java.util.Map;
 
 import static tm4java.internal.utils.StringUtils.strArrCmp;
 
-
 /**
- * Based on <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/theme.ts#L481">
- * vscode-textmate/src/theme.ts#ThemeTrieElement#L481</a>.
- * <p>
- * See also <a href="https://github.com/microsoft/vscode/blob/1.102.2/src/vs/editor/common/languages/supports/tokenization.ts#L338">
+ * Represents a node in the prefix tree (Trie) used for efficient scope matching and theme rule lookup.
+ *
+ * <p>Each node corresponds to a scope segment (e.g., {@code "source"} or {@code "java"}) and holds
+ * styling rules applicable at that scope depth, as well as child nodes for deeper segments.
+ *
+ * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/theme.ts#L503">
+ * vscode-textmate/src/theme.ts#ThemeTrieElement#L503</a>
+ * @see <a href="https://github.com/microsoft/vscode/blob/1.102.2/src/vs/editor/common/languages/supports/tokenization.ts#L338">
  * vscode/src/tokenization.ts#ThemeTrieElement#L338</a>
  */
 public final class ThemeTrieElement {
 
+    /** The primary fallback rule applied when no parent scopes match. */
     final ThemeTrieElementRule mainRule;
+
+    /** List of conditional styling rules that require parent scope matches. */
     final List<ThemeTrieElementRule> rulesWithParentScopes;
+
+    /** Map of child trie elements keyed by scope segment name (e.g. {@code "keyword"}). */
     final Map<String /*segment*/, ThemeTrieElement> children;
 
+    /**
+     * Constructs a new root trie node with the specified main rule.
+     *
+     * @param mainRule the default theme rule for this scope node
+     */
     public ThemeTrieElement(ThemeTrieElementRule mainRule) {
         this(mainRule, new ArrayList<>(), new HashMap<>());
     }
 
+    /**
+     * Constructs a trie node with a main rule and conditional parent scope rules.
+     *
+     * @param mainRule              the default theme rule for this scope node
+     * @param rulesWithParentScopes list of rules that require parent scope matching
+     */
     public ThemeTrieElement(ThemeTrieElementRule mainRule,
                             List<ThemeTrieElementRule> rulesWithParentScopes) {
         this(mainRule, rulesWithParentScopes, new HashMap<>());
     }
 
+    /**
+     * Constructs a trie node with full specifications including children.
+     *
+     * @param mainRule              the default theme rule for this scope node
+     * @param rulesWithParentScopes list of rules that require parent scope matching
+     * @param children              map of child nodes indexed by scope segment
+     */
     public ThemeTrieElement(ThemeTrieElementRule mainRule,
                             List<ThemeTrieElementRule> rulesWithParentScopes,
-                            Map<String /*segment*/, ThemeTrieElement> children) {
+                            Map<String/*segment*/, ThemeTrieElement> children) {
         this.mainRule = mainRule;
         this.rulesWithParentScopes = rulesWithParentScopes;
         this.children = children;
     }
 
+    /**
+     * Finds and returns all applicable rules for a given scope path, sorted by specificity.
+     *
+     * <p>Traverses down the trie following dot-separated segments in the {@code scope}.
+     *
+     * @param scope the target scope path segment string (e.g. {@code "keyword.control.java"})
+     * @return a list of matching {@link ThemeTrieElementRule} objects ordered from most to least specific
+     */
     public List<ThemeTrieElementRule> match(String scope) {
         if (!scope.isEmpty()) {
             int dotIndex = scope.indexOf('.');
@@ -74,6 +108,16 @@ public final class ThemeTrieElement {
         return rules;
     }
 
+    /**
+     * Inserts a theme rule into the trie hierarchy for the given scope and parent scopes.
+     *
+     * @param scopeDepth   the depth (number of segments) of the scope name
+     * @param scope        the scope path string to index (e.g. {@code "comment.line"})
+     * @param parentScopes optional list of parent scopes required for contextual matching
+     * @param fontStyle    font style bitflags to apply
+     * @param foreground   foreground color ID to apply
+     * @param background   background color ID to apply
+     */
     public void insert(int scopeDepth,
                        String scope,
                        @Nullable List<String> parentScopes,
@@ -127,6 +171,21 @@ public final class ThemeTrieElement {
 
     //*************************************************************************
 
+    /**
+     * Comparator for sorting theme rules by TextMate scope specificity.
+     *
+     * <p>Evaluates rules according to:
+     * <ol>
+     * <li>Scope depth of the primary rule (deeper scope depth wins).</li>
+     * <li>Length of matching parent scopes examined depth-first (longer length wins).</li>
+     * <li>Total count of parent scopes (more parent scopes wins).</li>
+     * </ol>
+     *
+     * @param a first rule to compare
+     * @param b second rule to compare
+     * @return negative integer if {@code a} is more specific than {@code b},
+     * positive if less specific, zero if equal
+     */
     private static int cmpBySpecificity(ThemeTrieElementRule a, ThemeTrieElementRule b) {
         // First, compare the scope depths of both rules. The “scope depth” of a rule is
         // the number of segments (delimited by dots) in the rule's deepest scope name
@@ -179,6 +238,15 @@ public final class ThemeTrieElement {
         return bParentScopesSize - aParentScopesSize;
     }
 
+    /**
+     * Inserts styling attributes into the current node, merging into existing rules or creating a new rule.
+     *
+     * @param scopeDepth   the depth of the scope being inserted
+     * @param parentScopes list of parent scope names, or {@code null} if updating the main rule
+     * @param fontStyle    font style bitflags
+     * @param foreground   foreground color ID
+     * @param background   background color ID
+     */
     private void doInsertHere(int scopeDepth,
                               @Nullable List<String> parentScopes,
                               int fontStyle,
@@ -201,6 +269,7 @@ public final class ThemeTrieElement {
         }
 
         // Must add a new rule
+        //*************************************************
 
         // Inherit from main rule
         if (fontStyle == FontStyle.NOT_SET) {

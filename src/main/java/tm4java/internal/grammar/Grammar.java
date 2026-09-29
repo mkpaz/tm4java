@@ -32,6 +32,9 @@ import java.util.*;
 import java.util.function.Function;
 
 /**
+ * Core implementation of a TextMate grammar, managing rule creation, scope metadata,
+ * injections, and tokenization of lines.
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammar.ts#L98">
  * vscode-textmate/src/grammar/grammar.ts#L98</a>
  */
@@ -39,22 +42,54 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
 
     private static final Logger LOGGER = System.getLogger(Grammar.class.getName());
 
+    /** The root scope name of this grammar (e.g., {@code "source.java"}). */
     private final String rootScopeName;
+
+    /** Provider for basic scope metadata such as default language ID and token types. */
     private final BasicScopeAttributesProvider basicScopeAttributesProvider;
+
+    /** External repository for looking up dependent or included grammars. */
     private final IGrammarRepository grammarRepository;
+
+    /** Cloned raw grammar structure holding parsed rule declarations. */
     private final IRawGrammar grammar;
+
+    /** Selectors used to identify balanced brackets during tokenization. */
     private final @Nullable BalancedBracketSelectors balancedBracketSelectors;
 
+    /** Registry mapping compiled rule IDs to their internal rule descriptors. */
     private final Map<RuleId, @Nullable Rule> ruleId2desc = new HashMap<>();
-    private final Map<String /*scopeName*/, IRawGrammar> includedGrammars = new HashMap<>();
+
+    /** Cache of loaded external/included grammars keyed by scope name. */
+    private final Map<String/*scopeName*/, IRawGrammar> includedGrammars = new HashMap<>();
+
+    /** Rules used to override specific token types based on scope selectors. */
     private final List<TokenTypeMatcher> tokenTypeMatchers = new ArrayList<>();
 
+    /** ID of the root compiled rule for this grammar. */
     private @Nullable RuleId rootId;
+
+    /** Atomic sequence counter for generating unique {@link RuleId} instances. */
     private int lastRuleId = 0;
+
+    /** The list of injection rules active in this grammar. */
     private @Nullable List<Injection> injections;
 
+    /** Theme provider supplying default color IDs and font styles. */
     final IThemeProvider themeProvider;
 
+    /**
+     * Constructs a new {@code Grammar} instance.
+     *
+     * @param rootScopeName            the root scope identifier for the grammar
+     * @param grammar                  the raw grammar model parsed from JSON/Plist
+     * @param initialLanguage          the default language ID
+     * @param embeddedLanguages        mapping of scope selectors to embedded language IDs
+     * @param tokenTypes               mapping of scope selectors to custom token types
+     * @param balancedBracketSelectors bracket matching rules
+     * @param grammarRepository        repository for fetching included or external grammars
+     * @param themeProvider            theme attributes provider
+     */
     public Grammar(String rootScopeName,
                    IRawGrammar grammar,
                    int initialLanguage,
@@ -62,8 +97,8 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
                    @Nullable Map<String, Integer> tokenTypes,
                    @Nullable BalancedBracketSelectors balancedBracketSelectors,
                    IGrammarRepository grammarRepository,
-                   IThemeProvider themeProvider) {
-
+                   IThemeProvider themeProvider
+    ) {
         this.rootScopeName = rootScopeName;
         this.basicScopeAttributesProvider = new BasicScopeAttributesProvider(initialLanguage, embeddedLanguages);
         this.grammarRepository = grammarRepository;
@@ -187,10 +222,21 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
 
     //*************************************************************************
 
+    /**
+     * Resolves basic scope attributes for the given scope name.
+     *
+     * @param scope the scope name to look up
+     * @return basic attributes such as language ID and default token type
+     */
     BasicScopeAttributes getMetadataForScope(String scope) {
         return basicScopeAttributesProvider.getBasicScopeAttributes(scope);
     }
 
+    /**
+     * Lazy-loads and returns all injection rules applicable to this grammar.
+     *
+     * @return sorted list of active injection rules
+     */
     List<Injection> getInjections() {
         if (injections == null) {
             injections = this.doCollectInjections();
@@ -205,6 +251,15 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
         return injections;
     }
 
+    /**
+     * Helper method to parse a scope selector and register corresponding {@link Injection} objects.
+     *
+     * @param result            the destination list for collected injections
+     * @param selector          the scope selector string defining where to inject
+     * @param rawRule           the raw rule associated with the injection
+     * @param ruleFactoryHelper factory helper for compiling rules
+     * @param rawGrammar        the raw grammar declaring the injection
+     */
     private void collectInjections(List<Injection> result,
                                    String selector,
                                    IRawRule rawRule,
@@ -219,6 +274,11 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
         }
     }
 
+    /**
+     * Gathers and sorts all internal and contributed external injections.
+     *
+     * @return sorted list of compiled injections
+     */
     private List<Injection> doCollectInjections() {
         var grammarRepository = new IGrammarRepository() {
             @Override
@@ -270,6 +330,14 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
         return result;
     }
 
+    /**
+     * Clones and initializes a raw grammar instance, binding {@code $self}
+     * and {@code $base} repository entries.
+     *
+     * @param grammar the raw grammar model to initialize
+     * @param base    optional explicit base rule
+     * @return cloned and configured raw grammar
+     */
     private IRawGrammar initGrammar(IRawGrammar grammar, @Nullable IRawRule base) {
         grammar = ObjectCloner.deepClone(grammar);
 
@@ -284,6 +352,16 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
         return grammar;
     }
 
+    /**
+     * Executes line tokenization for either standard object tokens or binary encoded tokens.
+     *
+     * @param <T>              token array representation type ({@code IToken[]} or {@code int[]})
+     * @param lineText         the input text of the line
+     * @param prevState        previous state stack, or {@code null} for the first line
+     * @param emitBinaryTokens {@code true} to produce binary integer metadata arrays
+     * @param timeLimit        optional timeout duration
+     * @return tokenization result containing tokens, updated state stack, and timeout status
+     */
     @SuppressWarnings("unchecked")
     private synchronized <T> TokenizeLineResult<T> doTokenize(String lineText,
                                                               @Nullable StateStack prevState,
@@ -317,7 +395,7 @@ public final class Grammar implements IGrammar, IRuleFactoryHelper {
 
             AttributedScopeStack scopeList;
             if (rootScopeName != null) {
-                scopeList = AttributedScopeStack.createRootAndLookUpScopeName(
+                scopeList = AttributedScopeStack.createRootAndLookupScopeName(
                     rootScopeName, defaultMetadata, this
                 );
             } else {

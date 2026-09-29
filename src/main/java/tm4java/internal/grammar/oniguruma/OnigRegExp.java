@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
- * Represents an Oniguruma regular expression.
+ * Represents an Oniguruma regex.
  *
  * @see <a href="https://github.com/atom/node-oniguruma/blob/master/src/onig-reg-exp.cc">
  * github.com/atom/node-oniguruma/src/onig-reg-exp.cc</a>
@@ -48,7 +48,7 @@ public final class OnigRegExp implements AutoCloseable {
     /**
      * Creates a new OnigRegExp instance with case-insensitive matching.
      *
-     * @param pattern    the pattern of the regular expression
+     * @param pattern    the pattern of the regex
      * @param ignoreCase whether to perform case-insensitive matching
      * @throws TMException if parsing fails
      */
@@ -110,7 +110,7 @@ public final class OnigRegExp implements AutoCloseable {
     }
 
     /**
-     * Returns the pattern of this regular expression.
+     * Returns the pattern of this regex.
      */
     public String pattern() {
         return pattern;

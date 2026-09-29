@@ -23,7 +23,11 @@ import java.util.Objects;
 import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
 
 /**
- * Represents a "pushed" state on the stack (as a linked list element).
+ * Represents a "pushed" state on the state stack during TextMate grammar tokenization.
+ *
+ * <p>Implemented as an immutable singly-linked list node pointing back to its parent state.
+ * Maintains context regarding active rule IDs, anchor positions, captured end rules,
+ * and scope stacks for the tokenization lifecycle.
  *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammar.ts#L592">
  * vscode-textmate/src/grammar/grammar.ts#L592</a>
@@ -34,6 +38,17 @@ public final class StateStack implements IStateStack {
         null, RuleId.NO_RULE, 0, 0, false, null, null, null
     );
 
+    /**
+     * Represents a serialized snapshot frame of a single stack state.
+     *
+     * @param ruleId                the ID of the rule associated with this frame
+     * @param enterPos              the line character index where the rule was entered
+     * @param anchorPos             the line anchor position for the rule
+     * @param beginRuleCapturedEOL  whether the begin pattern matched across the end of the line
+     * @param endRule               the dynamic regex pattern required to pop/exit this state
+     * @param nameScopesList        the scope list frames corresponding to the rule's name
+     * @param contentNameScopesList the scope list frames corresponding to the rule's contentName
+     */
     public record Frame(RuleId ruleId,
                         @Nullable Integer enterPos,
                         @Nullable Integer anchorPos,
@@ -58,19 +73,13 @@ public final class StateStack implements IStateStack {
      */
     private int anchorPos;
 
-    /**
-     * The depth of the stack.
-     */
+    /** The depth of the stack. */
     final int depth;
 
-    /**
-     * The previous state on the stack (or null for the root state).
-     */
+    /** The previous state on the stack (or {@code null} for the root state). */
     final @Nullable StateStack parent;
 
-    /**
-     * The state (rule) that this element represents.
-     */
+    /** The state (rule) that this element represents. */
     final RuleId ruleId;
 
     /**
@@ -85,17 +94,18 @@ public final class StateStack implements IStateStack {
      */
     final @Nullable String endRule;
 
-    /**
-     * The list of scopes containing the "name" for this state.
-     */
+    /** The list of scopes containing the "name" for this state. */
     final @Nullable AttributedScopeStack nameScopesList;
 
     /**
      * The list of scopes containing the "contentName" (besides "name")
-     * for this state. This list **must** contain as an element `scopeName`.
+     * for this state. This list **must** contain as an element {@code scopeName}.
      */
     final @Nullable AttributedScopeStack contentNameScopesList;
 
+    /**
+     * Constructs a new {@link StateStack} node.
+     */
     StateStack(@Nullable StateStack parent,
                RuleId ruleId,
                int enterPos,
@@ -116,11 +126,26 @@ public final class StateStack implements IStateStack {
         this.contentNameScopesList = contentNameScopesList;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getDepth() {
         return depth;
     }
 
+    /**
+     * Pushes a new state node onto this stack.
+     *
+     * @param ruleId                the ID of the rule being entered
+     * @param enterPos              the character index on the current line
+     * @param anchorPos             the current anchor position
+     * @param beginRuleCapturedEOL  whether the rule matched across EOL
+     * @param endRule               the dynamic end regex pattern, or {@code null}
+     * @param nameScopesList        the scope stack for rule name scopes
+     * @param contentNameScopesList the scope stack for rule content scopes
+     * @return a new state stack head representing the pushed state
+     */
     StateStack push(RuleId ruleId,
                     int enterPos,
                     int anchorPos,
@@ -140,11 +165,21 @@ public final class StateStack implements IStateStack {
         );
     }
 
+    /**
+     * Pops the top state from the stack.
+     *
+     * @return the parent state stack node, or {@code null} if popping the root node
+     */
     @Nullable
     StateStack pop() {
         return parent;
     }
 
+    /**
+     * Safely pops the top state from the stack, returning {@code this} if parent is {@code null}.
+     *
+     * @return the parent state stack node, or {@code this} if no parent exists
+     */
     StateStack safePop() {
         if (parent != null) {
             return parent;
@@ -152,6 +187,9 @@ public final class StateStack implements IStateStack {
         return this;
     }
 
+    /**
+     * Resets the line-bound transient state (enter position and anchor position) across all stack frames.
+     */
     void reset() {
         StateStack item = this;
         while (item != null) {
@@ -161,22 +199,45 @@ public final class StateStack implements IStateStack {
         }
     }
 
+    /**
+     * Returns the line enter position for this stack frame.
+     *
+     * @return the character position where this state was entered
+     */
     int getEnterPos() {
         return enterPos;
     }
 
+    /**
+     * Returns the anchor position for this stack frame.
+     *
+     * @return the saved anchor position
+     */
     int getAnchorPos() {
         return anchorPos;
     }
 
+    /**
+     * Resolves the concrete {@link Rule} instance associated with this stack state.
+     *
+     * @param grammar the grammar rule registry
+     * @return the resolved rule instance
+     */
     Rule getRule(IRuleRegistry grammar) {
         return grammar.getRule(ruleId);
     }
 
+    /**
+     * Returns a copy of this state stack with updated content name scope stack.
+     *
+     * @param contentNameScopesList the new content name scopes stack
+     * @return a updated state stack node instance
+     */
     StateStack withContentNameScopesList(@Nullable AttributedScopeStack contentNameScopesList) {
         if (Objects.equals(this.contentNameScopesList, contentNameScopesList)) {
             return this;
         }
+
         return castNonNull(parent).push(
             ruleId,
             enterPos,
@@ -188,6 +249,12 @@ public final class StateStack implements IStateStack {
         );
     }
 
+    /**
+     * Returns a copy of this state stack with an updated end rule expression.
+     *
+     * @param endRule the new end rule expression
+     * @return an updated state stack node instance
+     */
     StateStack withEndRule(String endRule) {
         if (this.endRule != null && this.endRule.equals(endRule)) {
             return this;
@@ -204,7 +271,11 @@ public final class StateStack implements IStateStack {
         );
     }
 
-    @SuppressWarnings("unused")
+    /**
+     * Converts this state stack frame into a serialized {@link Frame} instance.
+     *
+     * @return the snapshot frame representation
+     */
     Frame toStateStackFrame() {
         var nameScopesList_ = nameScopesList;
         var contentNameScopesList_ = contentNameScopesList;
@@ -225,7 +296,11 @@ public final class StateStack implements IStateStack {
     }
 
     /**
-     * Used to warn of endless loops
+     * Checks if another state stack contains the exact same rule ID at the same enter position.
+     * Used to detect endless tokenization loops.
+     *
+     * @param other the target state stack to compare against
+     * @return {@code true} if a matching rule ID was entered at the same position
      */
     boolean hasSameRuleAs(StateStack other) {
         var item = this;
@@ -264,6 +339,11 @@ public final class StateStack implements IStateStack {
 
     //*************************************************************************
 
+    /**
+     * Recursively appends string representations of parents and this node to a result list.
+     *
+     * @param res target string list
+     */
     private void writeString(List<String> res) {
         if (parent != null) {
             parent.writeString(res);
@@ -273,12 +353,23 @@ public final class StateStack implements IStateStack {
 
     //*************************************************************************
 
+    /**
+     * Reconstructs a {@link StateStack} from a base stack and a target {@link Frame}.
+     *
+     * @param self  the base state stack instance
+     * @param frame the snapshot frame to append
+     * @return the reconstructed state stack
+     */
     @SuppressWarnings("unused")
     public static StateStack pushFrame(@Nullable StateStack self, Frame frame) {
-        var namesScopeList = AttributedScopeStack.fromExtension(self == null ? null : self.nameScopesList,
-            frame.nameScopesList);
+        var namesScopeList = AttributedScopeStack.fromExtension(
+            self == null ? null : self.nameScopesList,
+            frame.nameScopesList
+        );
+
         var enterPos = frame.enterPos;
         var anchorPos = frame.anchorPos;
+
         return new StateStack(
             self,
             frame.ruleId,
@@ -292,11 +383,14 @@ public final class StateStack implements IStateStack {
     }
 
     /**
-     * A structural equals check. Does not take into account `scopes`.
+     * Performs structural equality check between two state stack chains, ignoring scope stacks.
+     *
+     * @param a first state stack
+     * @param b second state stack
+     * @return {@code true} if both stacks share matching depth, rule IDs, and end rules
      */
     @SuppressWarnings("ConstantValue")
-    private static boolean structuralEquals(@Nullable StateStack a,
-                                            @Nullable StateStack b) {
+    private static boolean structuralEquals(@Nullable StateStack a, @Nullable StateStack b) {
         do {
             if (a == b) {
                 return true;
@@ -324,6 +418,13 @@ public final class StateStack implements IStateStack {
         } while (true);
     }
 
+    /**
+     * Evaluates full equality between two state stacks including content name scope matching.
+     *
+     * @param a first state stack
+     * @param b second state stack
+     * @return {@code true} if both state stacks are equal
+     */
     private static boolean areEqual(StateStack a, StateStack b) {
         if (a == b) {
             return true;

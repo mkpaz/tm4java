@@ -12,42 +12,50 @@ package tm4java.internal.registry;
 import org.jspecify.annotations.Nullable;
 import tm4java.internal.grammar.ScopeStack;
 import tm4java.theme.StyleAttributes;
-import tm4java.internal.theme.Theme;
 
 /**
- * The theme provider exposes an API for obtaining theme styles.
+ * Provides theme style attributes (such as colors and font styles) for token scopes.
  *
+ * <p>The theme provider resolves scope hierarchy against active theme rules to calculate
+ * the effective visual styling for tokenized source text.
+ *
+ * @see StyleAttributes
+ * @see ScopeStack
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammar.ts#L39">
  * vscode-textmate/src/grammar/grammar.ts#L39</a>
  */
 public interface IThemeProvider {
 
     /**
-     * Returns the theme style attributes for a given scope.
-     * <p>
-     * This method looks up the most specific theme rule for the given scope
-     * and returns the style attributes set for this rule if any.
+     * Resolves and returns the most specific theme style attributes for the given scope stack.
      *
-     * @param scopePath the scope stack used to determine the most specific theme rule
+     * <p>This method evaluates active theme matching rules against the provided {@link ScopeStack}
+     * hierarchy, adhering to TextMate scope selector specificity rules.
+     *
+     * @param scopePath the current scope stack representing the token context
+     * @return the resolved {@link StyleAttributes} for the matching rule, or {@code null}
+     *         if no specific theme rules match the scope stack
      */
     @Nullable
     StyleAttributes themeMatch(ScopeStack scopePath);
 
     /**
-     * Returns the default theme style attributes that are applied to a
-     * scope unless overridden by more specific theme rules.
-     * <p>
-     * See {@link Theme#getDefaults()}.
-     * <p>
-     * Theme defaults is the "settings" key with an empty scope.
+     * Returns the default theme style attributes applied when no scope-specific rules match.
+     *
+     * <p>Default attributes represent global theme settings (e.g., global foreground/background colors),
+     * corresponding to a theme rule with an empty scope selector.
+     *
      * <pre>{@code
      * <key>settings</key>
      * <dict>
+     *     <key>foreground</key>
+     *     <string>#000000</string>
      *     <key>background</key>
      *     <string>#FDF6E3</string>
-     *     ...
      * </dict>
      * }</pre>
+     *
+     * @return the default fallback {@link StyleAttributes} for the active theme
      */
     StyleAttributes getDefaults();
 }

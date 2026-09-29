@@ -12,6 +12,9 @@ package tm4java.internal.grammar.dependencies;
 import tm4java.internal.grammar.raw.RawRepository;
 
 /**
+ * Represents a parsed {@code include} rule reference in a TextMate grammar (e.g. {@code $self},
+ * {@code $base}, {@code #ruleName}, {@code scope.name}, or {@code scope.name#ruleName}).
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammarDependencies.ts#L240">
  * vscode-textmate/src/grammar/grammarDependencies.ts#L240</a>
  */
@@ -20,15 +23,29 @@ public final class IncludeReference {
     private static final IncludeReference BASE = new IncludeReference(
         Kind.BASE, RawRepository.DOLLAR_BASE, ""
     );
+
     private static final IncludeReference SELF = new IncludeReference(
         Kind.SELF, RawRepository.DOLLAR_SELF, ""
     );
 
+    /**
+     * Identifies the category of the include reference.
+     */
     public enum Kind {
+
+        /** The {@code $base} reference, pointing to the outer root grammar. */
         BASE,
+
+        /** The {@code $self} reference, pointing to the current grammar context. */
         SELF,
+
+        /** A relative reference within the local repository (e.g. {@code #ruleName}). */
         RELATIVE_REFERENCE,
+
+        /** A reference to the top-level rule of an external grammar (e.g. {@code source.js}). */
         TOP_LEVEL_REFERENCE,
+
+        /** A reference to a repository rule in an external grammar (e.g. {@code source.js#expression}). */
         TOP_LEVEL_REPOSITORY_REFERENCE
     }
 
@@ -42,18 +59,40 @@ public final class IncludeReference {
         this.ruleName = ruleName;
     }
 
+    /**
+     * Returns the kind of this include reference.
+     *
+     * @return the reference kind
+     */
     public Kind getKind() {
         return kind;
     }
 
+    /**
+     * Returns the target scope name associated with this reference, if applicable.
+     *
+     * @return the scope name, or empty string if not applicable
+     */
     public String getScopeName() {
         return scopeName;
     }
 
+    /**
+     * Returns the target repository rule name associated with this reference, if applicable.
+     *
+     * @return the rule name, or empty string if not applicable
+     */
     public String getRuleName() {
         return ruleName;
     }
 
+    /**
+     * Parses an include string into an {@link IncludeReference} instance.
+     *
+     * @param include the raw include string from grammar JSON/Plist
+     *                (e.g., {@code "$self"}, {@code "#foo"}, {@code "source.js#bar"})
+     * @return the parsed {@link IncludeReference}
+     */
     public static IncludeReference parseInclude(String include) {
         return switch (include) {
             case RawRepository.DOLLAR_BASE -> BASE;

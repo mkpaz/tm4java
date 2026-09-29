@@ -15,18 +15,21 @@ import tm4java.internal.grammar.raw.IRawCaptures;
 import tm4java.internal.grammar.raw.IRawRepository;
 import tm4java.internal.grammar.raw.IRawRule;
 import tm4java.internal.grammar.raw.RawRule;
+import tm4java.internal.utils.NullSafetyHelper;
 
 import java.lang.System.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import tm4java.internal.utils.NullSafetyHelper;
 
-import static java.lang.System.Logger.Level.*;
+import static java.lang.System.Logger.Level.DEBUG;
 import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
 
 /**
+ * Factory utility for constructing and compiling concrete TextMate {@link Rule} instances
+ * from raw grammar rule descriptions ({@link IRawRule}).
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L381">
  * vscode-textmate/src/rule.ts#L381</a>
  */
@@ -38,6 +41,17 @@ public final class RuleFactory {
         // utility class
     }
 
+    /**
+     * Compiles a raw rule descriptor into a registered {@link Rule} and returns its unique {@link RuleId}.
+     *
+     * <p>If the rule descriptor does not yet have an assigned ID, it will be instantiated,
+     * compiled, registered with the helper, and assigned a new ID.
+     *
+     * @param desc       the raw rule descriptor to compile
+     * @param helper     the rule factory helper providing rule and grammar registration
+     * @param repository the repository context for resolving rule references
+     * @return the unique {@link RuleId} assigned to the compiled rule
+     */
     public static RuleId getCompiledRuleId(IRawRule desc,
                                            IRuleFactoryHelper helper,
                                            IRawRepository repository) {
@@ -121,6 +135,15 @@ public final class RuleFactory {
 
     //*************************************************************************
 
+    /**
+     * Creates and registers a new {@link CaptureRule} instance.
+     *
+     * @param helper                       the rule factory helper
+     * @param name                         the scope name for the capture group, or {@code null}
+     * @param contentName                  the inner content scope name, or {@code null}
+     * @param retokenizeCapturedWithRuleId rule ID to re-tokenize captured content with, or {@link RuleId#NO_RULE}
+     * @return the registered capture rule
+     */
     private static CaptureRule createCaptureRule(IRuleFactoryHelper helper,
                                                  @Nullable String name,
                                                  @Nullable String contentName,
@@ -128,6 +151,14 @@ public final class RuleFactory {
         return helper.registerRule(id -> new CaptureRule(id, name, contentName, retokenizeCapturedWithRuleId));
     }
 
+    /**
+     * Compiles raw captures into an indexed list of positional {@link CaptureRule} instances.
+     *
+     * @param captures   the raw capture specifications, or {@code null}
+     * @param helper     the rule factory helper
+     * @param repository the raw repository context
+     * @return a list where index {@code i} corresponds to capture group {@code i}
+     */
     private static List<@Nullable CaptureRule> compileCaptures(@Nullable IRawCaptures captures,
                                                                IRuleFactoryHelper helper,
                                                                IRawRepository repository) {
@@ -165,6 +196,14 @@ public final class RuleFactory {
         return result;
     }
 
+    /**
+     * Compiles a collection of raw pattern rules into a {@link CompilePatternsResult}.
+     *
+     * @param patterns   the collection of raw rule pattern descriptors, or {@code null}
+     * @param helper     the rule factory helper
+     * @param repository the current repository context
+     * @return the result holding compiled rule IDs and missing pattern status
+     */
     @SuppressWarnings("CallToPrintStackTrace")
     private static CompilePatternsResult compilePatterns(@Nullable Collection<IRawRule> patterns,
                                                          IRuleFactoryHelper helper,

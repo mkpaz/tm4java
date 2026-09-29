@@ -57,16 +57,27 @@ public interface PropertyPath extends Iterable<Object> {
 
     /**
      * Returns the depth of the path.
+     *
+     * @return the total number of segments in this path
      */
     int depth();
 
     //*************************************************************************
 
+    /**
+     * An {@link ArrayList}-backed implementation of {@link PropertyPath}.
+     */
     final class ListBasedPropertyPath extends ArrayList<Object> implements PropertyPath {
 
         @Serial
         private static final long serialVersionUID = 1L;
 
+        /**
+         * {@inheritDoc}
+         *
+         * @return the first segment in the path ({@link String} or {@link Integer})
+         * @throws NoSuchElementException if this path is empty
+         */
         @Override
         public Object first() {
             if (isEmpty()) {
@@ -75,11 +86,24 @@ public interface PropertyPath extends Iterable<Object> {
             return get(0);
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * @param index the 0-based position of the segment
+         * @return the segment at the specified index
+         * @throws IndexOutOfBoundsException if {@code index} is out of range
+         */
         @Override
         public Object get(int index) {
             return super.get(index);
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * @return the last segment in the path ({@link String} or {@link Integer})
+         * @throws NoSuchElementException if this path is empty
+         */
         @Override
         public Object last() {
             if (isEmpty()) {
@@ -88,11 +112,21 @@ public interface PropertyPath extends Iterable<Object> {
             return get(size() - 1);
         }
 
+        /**
+         * {@inheritDoc}
+         *
+         * @return the size of the underlying list representing path depth
+         */
         @Override
         public int depth() {
             return size();
         }
 
+        /**
+         * Returns a read-only iterator over the path segments.
+         *
+         * @return an {@link Iterator} that disables {@link Iterator#remove()}
+         */
         @Override
         public Iterator<Object> iterator() {
             var it = super.iterator();

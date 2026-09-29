@@ -12,33 +12,44 @@ package tm4java.grammar;
 import java.util.List;
 
 /**
- * Tokens are one or more characters that belong to the same program element. For example,
- * tokens include operators such as {@code +} and {@code *}, variable names like {@code myVar},
- * or strings such as {@code "my string"}.
+ * Represents a token produced during standard TextMate line tokenization.
  *
- * <p>Each token is associated with a scope that defines its context. A scope is a dot-separated
- * list of identifiers specifying the context of the current token. For instance, the {@code +}
- * operation in JavaScript has the scope {@code keyword.operator.arithmetic.js}. Scopes can nest,
- * so each token is also associated with a list of parent scopes. The {@link #getScopes()}
- * method returns the list of scopes the token is part of.
+ * <p>Tokens group one or more characters that belong to the same syntax element (such as keywords,
+ * operators, comments, or string literals).
  *
- * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/main.ts#L249">vscode-textmate/src/main.ts#L249</a>
+ * <p>Each token carries a full hierarchy of TextMate scope selectors defining its context.
+ * A scope is a dot-separated identifier (e.g. {@code keyword.operator.arithmetic.js}).
+ * Scope lists are ordered from the outermost parent scope down to the most specific leaf scope.
+ *
+ * @see <a href="https://github.com/microsoft/vscode-textmate/blob/v9.2.0/src/main.ts#L249">
+ * vscode-textmate/src/main.ts#L249</a>
+ * @see ITokenizeLineResult
  */
 public interface IToken {
 
     /**
-     * Returns the 0-based token start index (inclusive).
+     * Returns the 0-based character offset where this token begins (inclusive).
+     *
+     * @return the inclusive start character index
      */
     int getStartIndex();
 
     /**
-     * Returns the 0-based token end index (inclusive).
+     * Returns the 0-based character offset where this token ends (exclusive).
+     *
+     * <p>The length of the token can be computed as {@code getEndIndex() - getStartIndex()}.
+     *
+     * @return the exclusive end character index
      */
     int getEndIndex();
 
     /**
-     * Returns the list of scopes associated with the token, from the least
-     * specific to the most specific scope.
+     * Returns the hierarchy of scope selectors applied to this token.
+     *
+     * <p>The list is ordered from the least specific scope (e.g. {@code "source.java"}) at index {@code 0}
+     * to the most specific leaf scope (e.g. {@code "entity.name.function.java"}) at the last index.
+     *
+     * @return a list of scope names associated with this token
      */
     List<String> getScopes();
 }

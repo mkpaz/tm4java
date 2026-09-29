@@ -17,9 +17,16 @@ package tm4java.internal.grammar.tokenattrs;
  */
 final class StandardTokenType {
 
+    /** Constant value representing an uncategorized standard token type. */
     static final int OTHER = 0;
+
+    /** Constant value representing a comment token type. */
     static final int COMMENT = 1;
+
+    /** Constant value representing a string literal token type. */
     static final int STRING = 2;
+
+    /** Constant value representing a regex token type. */
     static final int REGEX = 3;
 
     private StandardTokenType() {

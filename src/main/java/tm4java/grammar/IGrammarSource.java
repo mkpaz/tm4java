@@ -11,11 +11,11 @@ package tm4java.grammar;
 
 import org.jspecify.annotations.Nullable;
 import tm4java.TMException;
+import tm4java.internal.utils.Resources;
+import tm4java.parser.ContentType;
 import tm4java.parser.TMParser;
 import tm4java.parser.TMParserNanoJson;
 import tm4java.parser.TMParserPList;
-import tm4java.internal.utils.Resources;
-import tm4java.parser.ContentType;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -29,44 +29,63 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * Defines an interface for reading and parsing TextMate grammars from various sources.
- * <p>
- * See helper static methods:
- * <li>{@link #fromFile(Path)}
- * <li>{@link #fromResource(Class, String)}
- * <li>{@link #fromString(ContentType, String)}
+ * Defines an abstraction for reading and parsing TextMate grammars from various sources
+ * (such as files, classpath resources, or in-memory strings).
+ *
+ * <p>Convenience static factory methods:
+ * <ul>
+ * <li>{@link #fromFile(Path)}</li>
+ * <li>{@link #fromResource(Class, String)}</li>
+ * <li>{@link #fromString(ContentType, String)}</li>
+ * </ul>
  */
 public interface IGrammarSource {
 
     /**
-     * Returns the grammar source URI.
+     * Returns the unique URI identifying this grammar source.
+     *
+     * @return the URI location of the grammar
      */
     URI getURI();
 
     /**
-     * Returns the grammar source reader.
+     * Creates and returns a new {@link Reader} to access the raw grammar content.
+     *
+     * <p>Callers are responsible for closing the returned reader.
+     *
+     * @return a reader for the grammar content
+     * @throws IOException if an I/O error occurs while opening the stream
      */
     Reader getReader() throws IOException;
 
     /**
-     * Returns the grammar resource modification date or 0, if resource does not exist
-     * or modification date cannot be determined.
+     * Returns the last modified time of the grammar source resource.
+     *
+     * @return the last modification timestamp in milliseconds since Unix epoch,
+     * or {@code 0} if the resource does not exist or the timestamp cannot be determined
      */
     long getLastModified();
 
     /**
-     * Returns the content type of the grammar source.
-     * The default implementation attempts to infer the content type from the URI.
+     * Returns the content type (e.g., JSON or XML/Plist) of the grammar source.
      *
-     * @throws TMException if the content type is unsupported or cannot be determined
+     * <p>The default implementation attempts to infer the content type from the URI path extension.
+     *
+     * @return the detected {@link ContentType}, or {@code null} if it cannot be inferred from the URI
+     * @throws TMException if the content type is unsupported
      */
     default @Nullable ContentType getContentType() {
         return ContentType.getByExtension(getURI().getPath());
     }
 
     /**
-     * Returns the parser for deserializing a grammar from the source resource.
-     * The default implementation can parse grammars from JSON or PList formats.
+     * Returns a parser instance capable of deserializing the grammar from this source.
+     *
+     * <p>The default implementation supports parsing JSON and XML (Plist) grammars based on
+     * {@link #getContentType()}.
+     *
+     * @return the {@link TMParser} suited for this grammar source
+     * @throws TMException if the content type is unknown or unsupported
      */
     default TMParser getParser() {
         var contentType = getContentType();
@@ -83,19 +102,24 @@ public interface IGrammarSource {
     //*************************************************************************
 
     /**
-     * See {@link #fromFile(Path, ContentType, Charset)}.
+     * Creates a grammar source from the specified file path using default UTF-8 encoding
+     * and auto-detecting content type.
+     *
+     * @param file the path to the grammar file
+     * @return a new {@link IGrammarSource} instance backing the given file
+     * @see #fromFile(Path, ContentType, Charset)
      */
     static IGrammarSource fromFile(Path file) {
         return fromFile(file, null, null);
     }
 
     /**
-     * Creates a source for reading a grammar from the specified file path.
+     * Creates a grammar source for reading a TextMate grammar from a file.
      *
      * @param file        the path to the grammar file
-     * @param contentType the content type of the file, or null if unknown
-     * @param charset     The character set for reading the file, defaults to UTF-8
-     * @throws TMException if the content type is unsupported or cannot be determined
+     * @param contentType the explicit content type of the file, or {@code null} to auto-detect by file extension
+     * @param charset     the character set used to read the file, or {@code null} for UTF-8
+     * @return a new {@link IGrammarSource} instance backing the given file
      */
     static IGrammarSource fromFile(Path file,
                                    @Nullable ContentType contentType,
@@ -124,26 +148,32 @@ public interface IGrammarSource {
     }
 
     /**
-     * See {@link #fromResource(Class, String, ContentType, Charset)}.
+     * Creates a grammar source from a Java classpath resource using default UTF-8 encoding
+     * and auto-detecting content type.
+     *
+     * @param anchor       the class to be used for resource resolution
+     * @param resourceName the name/path of the classpath resource
+     * @return a new {@link IGrammarSource} instance backing the classpath resource
+     * @see #fromResource(Class, String, ContentType, Charset)
      */
-    static IGrammarSource fromResource(Class<?> clazz, String resourceName) {
-        return fromResource(clazz, resourceName, null, null);
+    static IGrammarSource fromResource(Class<?> anchor, String resourceName) {
+        return fromResource(anchor, resourceName, null, null);
     }
 
     /**
-     * Creates a source for reading a grammar from the specified file path.
+     * Creates a grammar source for reading a TextMate grammar from a Java classpath resource.
      *
-     * @param clazz        the class to be used for resource lookup
-     * @param resourceName the name of the resource
-     * @param contentType  the content type of the resource, or null if unknown
-     * @param charset      rhe character set for reading the resource, defaults to UTF-8
-     * @throws TMException if the content type is unsupported or cannot be determined
+     * @param anchor       the class to be used for resource resolution
+     * @param resourceName the name/path of the classpath resource
+     * @param contentType  the explicit content type of the resource, or {@code null} to auto-detect
+     * @param charset      the character set used to read the resource, or {@code null} for UTF-8
+     * @return a new {@link IGrammarSource} instance backing the classpath resource
      */
-    static IGrammarSource fromResource(Class<?> clazz,
+    static IGrammarSource fromResource(Class<?> anchor,
                                        String resourceName,
                                        @Nullable ContentType contentType,
                                        @Nullable Charset charset) {
-        var uri = Resources.getResource(clazz, resourceName);
+        var uri = Resources.getResource(anchor, resourceName);
 
         return new IGrammarSource() {
             @Override
@@ -153,7 +183,7 @@ public interface IGrammarSource {
 
             @Override
             public Reader getReader() throws IOException {
-                return Resources.getReader(clazz, resourceName, charset);
+                return Resources.getReader(anchor, resourceName, charset);
             }
 
             @Override
@@ -164,7 +194,7 @@ public interface IGrammarSource {
             @Override
             public long getLastModified() {
                 try {
-                    return Resources.getLastModified(clazz, resourceName);
+                    return Resources.getLastModified(anchor, resourceName);
                 } catch (IOException e) {
                     return 0;
                 }
@@ -173,11 +203,11 @@ public interface IGrammarSource {
     }
 
     /**
-     * Creates a source for reading a grammar from the specified string.
+     * Creates an in-memory grammar source from an unparsed string payload.
      *
-     * @param contentType the content type of the resource, or null if unknown
-     * @param content     the source string containing a grammar
-     * @throws TMException if the content type is unsupported or cannot be determined
+     * @param contentType the explicit content type (e.g. JSON or XML) of the raw string
+     * @param content     the raw string content of the grammar
+     * @return a new {@link IGrammarSource} instance wrapping the string
      */
     static IGrammarSource fromString(ContentType contentType, String content) {
         var uri = URI.create("data:"

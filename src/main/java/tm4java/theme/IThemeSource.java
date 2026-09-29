@@ -29,11 +29,11 @@ import java.nio.file.Path;
 
 /**
  * Defines an interface for reading and parsing TextMate themes from various sources.
- * <p>
- * See helper static methods:
- * <li>{@link #fromFile(Path)}
- * <li>{@link #fromResource(Class, String)}
- * <li>{@link #fromString(ContentType, String)}
+ *
+ * <p>See helper static methods:
+ * <li>{@link #fromFile(Path)}</li>
+ * <li>{@link #fromResource(Class, String)}</li>
+ * <li>{@link #fromString(ContentType, String)}</li>
  */
 public interface IThemeSource {
 
@@ -65,7 +65,7 @@ public interface IThemeSource {
 
     /**
      * Returns the parser for deserializing a theme from the source resource.
-     * The default implementation can parse themes from JSON or PList formats.
+     * The default implementation can parse themes from JSON or Plist formats.
      */
     default TMParser getParser() {
         var contentType = getContentType();
@@ -123,23 +123,24 @@ public interface IThemeSource {
     /**
      * See {@link #fromResource(Class, String, ContentType, Charset)}.
      */
-    static IThemeSource fromResource(Class<?> clazz, String resourceName) {
-        return fromResource(clazz, resourceName, null, null);
+    static IThemeSource fromResource(Class<?> anchor, String resourceName) {
+        return fromResource(anchor, resourceName, null, null);
     }
 
     /**
      * Creates a source for reading a theme from the specified file path.
      *
-     * @param clazz        the class to be used for resource lookup
+     * @param anchor        the class to be used for resource lookup
      * @param resourceName the name of the resource
      * @param contentType  the content type of the resource, or null if unknown
      * @param charset      rhe character set for reading the resource, defaults to UTF-8
      * @throws TMException if the content type is unsupported or cannot be determined
      */
-    static IThemeSource fromResource(Class<?> clazz, String resourceName,
+    static IThemeSource fromResource(Class<?> anchor,
+                                     String resourceName,
                                      @Nullable ContentType contentType,
                                      @Nullable Charset charset) {
-        var uri = Resources.getResource(clazz, resourceName);
+        var uri = Resources.getResource(anchor, resourceName);
 
         return new IThemeSource() {
             @Override
@@ -149,7 +150,7 @@ public interface IThemeSource {
 
             @Override
             public Reader getReader() throws IOException {
-                return Resources.getReader(clazz, resourceName, charset);
+                return Resources.getReader(anchor, resourceName, charset);
             }
 
             @Override
@@ -159,7 +160,7 @@ public interface IThemeSource {
 
             @Override
             public long lastModified() throws IOException {
-                return Resources.getLastModified(clazz, resourceName);
+                return Resources.getLastModified(anchor, resourceName);
             }
         };
     }

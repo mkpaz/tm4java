@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * A Gson-based implementation of the {@link TMParser} for parsing JSON documents
- * into a PropertySettable hierarchical structure.
+ * into a {@link PropertySettable} hierarchical structure.
  */
 public final class TMParserGson implements TMParser {
 

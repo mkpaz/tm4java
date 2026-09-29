@@ -10,6 +10,9 @@
 package tm4java.internal.grammar.dependencies;
 
 /**
+ * Represents an absolute reference to a TextMate grammar rule, either pointing directly
+ * to a scope's root rule or to a named rule within its top-level repository.
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammarDependencies.ts#L10">
  * vscode-textmate/src/grammar/grammarDependencies.ts#L10</a>
  */
@@ -17,16 +20,30 @@ public abstract sealed class AbsoluteRuleReference permits
     AbsoluteRuleReference.TopLevelRepositoryRuleReference,
     AbsoluteRuleReference.TopLevelRuleReference {
 
+    /**
+     * The scope name of the grammar containing the referenced rule.
+     */
     protected final String scopeName;
 
     private AbsoluteRuleReference(String scopeName) {
         this.scopeName = scopeName;
     }
 
+    /**
+     * Returns a string key identifying this rule reference (e.g. {@code "source.js"} or
+     * {@code "source.js#expression"}).
+     *
+     * @return the unique key representing this rule reference
+     */
     public String toKey() {
         return scopeName;
     }
 
+    /**
+     * Returns the target grammar's scope name.
+     *
+     * @return the scope name
+     */
     public String getScopeName() {
         return scopeName;
     }
@@ -54,6 +71,11 @@ public abstract sealed class AbsoluteRuleReference permits
             this.ruleName = ruleName;
         }
 
+        /**
+         * Returns the name of the repository rule.
+         *
+         * @return the rule name
+         */
         public String getRuleName() {
             return ruleName;
         }

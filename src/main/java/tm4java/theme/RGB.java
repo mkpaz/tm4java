@@ -32,6 +32,7 @@ public record RGB(int red, int green, int blue) {
      * The string may start with a '#' character.
      *
      * @param hex the hexadecimal color string (e.g., "#FF5733")
+     * @return the parsed {@link RGB} instance, or {@code null} if the input is {@code null} or blank
      */
     public static @Nullable RGB fromHex(@Nullable String hex) {
         if (hex == null || hex.isBlank()) {
@@ -47,11 +48,23 @@ public record RGB(int red, int green, int blue) {
         );
     }
 
+    /**
+     * Returns a CSS-style string representation of this RGB color (e.g., {@code "rgb(255,87,51)"}).
+     *
+     * @return a CSS-formatted string representing the color
+     */
     @Override
     public String toString() {
         return "rgb(" + red + "," + green + "," + blue + ")";
     }
 
+    /**
+     * Checks whether the specified character sequence is a valid hex color string.
+     * Supported formats include {@code #RGB}, {@code #RGBA}, {@code #RRGGBB}, and {@code #RRGGBBAA}.
+     *
+     * @param hex the character sequence to validate
+     * @return {@code true} if the input is a valid hex color; {@code false} otherwise
+     */
     public static boolean isValidHexColor(CharSequence hex) {
         if (hex.isEmpty()) {
             return false;

@@ -9,29 +9,25 @@
 
 package tm4java.internal.theme;
 
+import org.jspecify.annotations.Nullable;
+import tm4java.internal.grammar.ScopeStack;
+import tm4java.internal.utils.StringUtils;
+import tm4java.theme.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import static tm4java.internal.utils.CollectionUtils.findFirst;
 import static tm4java.internal.utils.StringUtils.strArrCmp;
 import static tm4java.internal.utils.StringUtils.strCmp;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import org.jspecify.annotations.Nullable;
-import tm4java.internal.grammar.ScopeStack;
-import tm4java.theme.IRawTheme;
-import tm4java.theme.IRawThemeSetting;
-import tm4java.internal.utils.StringUtils;
-import tm4java.theme.ITheme;
-import tm4java.theme.RGB;
-import tm4java.theme.StyleAttributes;
-
 /**
- * Represents a TextMate theme.
- * <p>
+ * Concrete implementation of {@link ITheme} representing a compiled TextMate theme.
+ *
+ * <p>This class processes theme rules into a trie data structure ({@link ThemeTrieElement})
+ * for scope prefix matching, caches matched rules per scope name, and resolves styling attributes
+ * against a shared color map.
  *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/theme.ts#L7">
  * vscode-textmate/src/theme.ts#Theme#L7</a>
@@ -40,27 +36,44 @@ import tm4java.theme.StyleAttributes;
  */
 public final class Theme implements ITheme {
 
+    /** Concurrent match cache mapping a leaf scope name to candidate theme rules retrieved from the trie. */
     private final transient ConcurrentMap<String/*scopeName*/, List<ThemeTrieElementRule>> cachedMatchRoot =
         new ConcurrentHashMap<>();
 
     private final ColorMap colorMap;
     private final StyleAttributes defaults;
     private final ThemeTrieElement root;
-    private Map<String, String> editorColors = Collections.emptyMap(); // not from upstream
+    private Map<String, String> editorColors = Collections.emptyMap(); // not from the upstream
 
-    public Theme(ColorMap colorMap,
-                 StyleAttributes defaults,
-                 ThemeTrieElement root) {
+    /**
+     * Constructs a compiled {@code Theme} instance.
+     *
+     * @param colorMap the color palette mapping hex values to integer IDs
+     * @param defaults default style attributes to fall back on when no rule matches
+     * @param root     the root node of the compiled theme rule trie
+     */
+    public Theme(ColorMap colorMap, StyleAttributes defaults, ThemeTrieElement root) {
         this.colorMap = colorMap;
         this.defaults = defaults;
         this.root = root;
     }
 
-    @Override
-    public @Nullable StyleAttributes match(String scope) {
-        return match(ScopeStack.from(scope));
+    /**
+     * Returns the root node of the theme trie structure.
+     *
+     * @return the root {@link ThemeTrieElement}
+     */
+    public ThemeTrieElement root() {
+        return root;
     }
 
+    /**
+     * Resolves the effective {@link StyleAttributes} for a scope stack path.
+     *
+     * @param scopePath the {@link ScopeStack} context representing the current scope chain
+     * @return the resolved {@link StyleAttributes}, {@link #getDefaults()} if {@code scopePath} is {@code null},
+     * or {@code null} if no matching rule is found in the trie
+     */
     public @Nullable StyleAttributes match(@Nullable ScopeStack scopePath) {
         if (scopePath == null) {
             return defaults;
@@ -76,15 +89,12 @@ public final class Theme implements ITheme {
             return null;
         }
 
-        return StyleAttributes.of(
-            effectiveRule.fontStyle,
-            effectiveRule.foreground,
-            effectiveRule.background
-        );
+        return StyleAttributes.of(effectiveRule.fontStyle, effectiveRule.foreground, effectiveRule.background);
     }
 
-    public ThemeTrieElement root() {
-        return root;
+    @Override
+    public @Nullable StyleAttributes match(String scope) {
+        return match(ScopeStack.from(scope));
     }
 
     @Override
@@ -98,7 +108,7 @@ public final class Theme implements ITheme {
     }
 
     @Override
-    public Map<String, String> getEditorColors() { // not from upstream
+    public Map<String, String> getEditorColors() { // not from the upstream
         return editorColors;
     }
 
@@ -116,8 +126,8 @@ public final class Theme implements ITheme {
         }
         if (obj instanceof Theme other) {
             return Objects.equals(colorMap, other.colorMap)
-                   && Objects.equals(defaults, other.defaults)
-                   && Objects.equals(root, other.root);
+                && Objects.equals(defaults, other.defaults)
+                && Objects.equals(root, other.root);
         }
         return false;
     }
@@ -139,8 +149,7 @@ public final class Theme implements ITheme {
             // check for a child combinator (a parent-child relationship)
             if (">".equals(scopePattern)) {
                 if (index == parentScopeNamesLen - 1) {
-                    // invalid use of child combinator
-                    return false;
+                    return false; // invalid use of child combinator
                 }
                 scopePattern = parentScopeNames.get(++index);
                 scopeMustMatch = true;
@@ -151,33 +160,34 @@ public final class Theme implements ITheme {
                     break;
                 }
                 if (scopeMustMatch) {
-                    // if a child combinator was used, the parent scope must match
-                    return false;
+                    return false; // if a child combinator was used, the parent scope must match
                 }
                 scopePath = scopePath.parent();
             }
 
             if (scopePath == null) {
-                // no more potential matches
-                return false;
+                return false; // no more potential matches
             }
             scopePath = scopePath.parent();
         }
 
-        // all parent scopes were matched
-        return true;
+        return true; // all parent scopes were matched
     }
 
     private boolean matchesScope(String scopeName, String scopeNamePattern) {
         return scopeNamePattern.equals(scopeName)
-               || scopeName.startsWith(scopeNamePattern)
-                  && scopeName.charAt(scopeNamePattern.length()) == '.';
+            || scopeName.startsWith(scopeNamePattern)
+            && scopeName.charAt(scopeNamePattern.length()) == '.';
     }
 
     //*************************************************************************
 
     /**
-     * Parse a raw theme into rules.
+     * Parses a raw theme data model into a flat list of uncompiled theme rules.
+     *
+     * @param source the raw theme definition loaded from JSON/Plist, or {@code null}
+     * @return a list of parsed {@link ParsedThemeRule} entries, or an empty list
+     * if {@code source} is {@code null}
      */
     public static List<ParsedThemeRule> parseTheme(@Nullable IRawTheme source) {
         if (source == null) {
@@ -265,7 +275,12 @@ public final class Theme implements ITheme {
     }
 
     /**
-     * Resolve rules (i.e. inheritance).
+     * Resolves rule inheritance, builds default attributes, populates the color palette map,
+     * and compiles rules into a trie structure.
+     *
+     * @param parsedThemeRules the list of parsed rules to resolve
+     * @param colorMap         an optional initial palette of hex color strings
+     * @return a fully compiled {@link Theme} instance
      */
     public static Theme resolveParsedThemeRules(List<ParsedThemeRule> parsedThemeRules,
                                                 @Nullable List<String> colorMap) {
@@ -326,11 +341,17 @@ public final class Theme implements ITheme {
         return new Theme(colorMap_, defaults, root);
     }
 
-    public static Theme createFromRawTheme(@Nullable IRawTheme source,
-                                           @Nullable List<String> colorMap) {
+    /**
+     * Creates and compiles a {@link Theme} directly from a raw theme representation.
+     *
+     * @param source   the raw theme object
+     * @param colorMap an optional initial color map
+     * @return the compiled {@link Theme} instance
+     */
+    public static Theme createFromRawTheme(@Nullable IRawTheme source, @Nullable List<String> colorMap) {
         var theme = createFromParsedTheme(parseTheme(source), colorMap);
 
-        // not from upstream
+        // not from the upstream
         if (source != null) {
             theme.editorColors = source.getEditorColors();
         }
@@ -338,6 +359,13 @@ public final class Theme implements ITheme {
         return theme;
     }
 
+    /**
+     * Creates a {@link Theme} from an already parsed list of theme rules.
+     *
+     * @param source   the parsed rules
+     * @param colorMap an optional initial color map
+     * @return the compiled {@link Theme} instance
+     */
     public static Theme createFromParsedTheme(List<ParsedThemeRule> source, @Nullable List<String> colorMap) {
         return resolveParsedThemeRules(source, colorMap);
     }

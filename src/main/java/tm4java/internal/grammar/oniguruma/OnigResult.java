@@ -5,7 +5,7 @@ import java.lang.foreign.ValueLayout;
 import java.util.Arrays;
 
 /**
- * Represents the result of an Oniguruma regular expression match.
+ * Represents the result of an Oniguruma regex match.
  *
  * @see <a href="https://github.com/atom/node-oniguruma/blob/master/src/onig-result.cc">
  * node-oniguruma/src/onig-result.cc</a>

@@ -14,8 +14,12 @@ import tm4java.internal.grammar.matcher.Matcher;
 import java.util.List;
 
 /**
+ * Associates a token match predicate with its target standard token type.
+ *
+ * @param matcher the predicate matcher operating on list of scope names
+ * @param type    the target standard token type (see {@code StandardTokenType})
+ *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/grammar/grammar.ts#L893">
  * vscode-textmate/src/grammar/grammar.ts#L893</a>
  */
-record TokenTypeMatcher(Matcher<List<String>> matcher, int type /*StandardTokenType*/) {
-}
+record TokenTypeMatcher(Matcher<List<String>> matcher, int type /*StandardTokenType*/) { }

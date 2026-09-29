@@ -10,12 +10,14 @@
 package tm4java.internal.grammar.rule;
 
 /**
- * Represents a result of compiling patterns.
+ * Represents the result of resolving and compiling rule patterns.
  *
- * @param patterns           the array of rule ids for the compiled patterns.
- * @param hasMissingPatterns whether any patterns are missing
+ * <p>Aggregates the array of resolved rule identifiers alongside a status flag
+ * indicating whether any referenced patterns could not be found during resolution.
+ *
+ * @param patterns           the array of rule IDs associated with the compiled patterns
+ * @param hasMissingPatterns {@code true} if one or more referenced patterns failed to resolve; {@code false} otherwise
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L91">
  * vscode-textmate/src/rule.ts#L91</a>
  */
-record CompilePatternsResult(RuleId[] patterns, boolean hasMissingPatterns) {
-}
+record CompilePatternsResult(RuleId[] patterns, boolean hasMissingPatterns) { }

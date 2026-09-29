@@ -19,18 +19,30 @@ import java.util.Objects;
 /**
  * Represents a rule in a theme trie.
  *
- * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/theme.ts#L430">
- * vscode-textmate/src/theme.ts#ThemeTrieElementRule#L430</a>
+ * <p>Encapsulates style attributes (font style mask, foreground color ID, and background color ID)
+ * associated with a specific scope depth and optional parent scope constraints.
+ *
+ * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/theme.ts#L452">
+ * vscode-textmate/src/theme.ts#ThemeTrieElementRule#L452</a>
  * @see <a href="https://github.com/microsoft/vscode/blob/1.102.2/src/vs/editor/common/languages/supports/tokenization.ts#L276">
  * vscode/src/tokenization.ts#ThemeTrieElementRule#L276</a>
  */
 public class ThemeTrieElementRule {
 
-    public int scopeDepth;
-    public final List<String> parentScopes;
-    public int fontStyle;
-    public int foreground;
-    public int background;
+    /** The depth of the scope name matching this rule. */
+    int scopeDepth;
+
+    /** The list of parent scope selectors required for contextual matching. */
+    final List<String> parentScopes;
+
+    /** Bitflags representing font style settings (e.g. bold, italic, underline). */
+    int fontStyle;
+
+    /** The palette color ID for token foreground color. */
+    int foreground;
+
+    /** The palette color ID for token background color. */
+    int background;
 
     /**
      * Creates a new theme trie element rule.
@@ -56,6 +68,13 @@ public class ThemeTrieElementRule {
 
     /**
      * Overwrites the rule's properties if the new scope depth is not greater than the current one.
+     *
+     * <p>Updates non-default values for {@code fontStyle}, {@code foreground}, and {@code background}.
+     *
+     * @param scopeDepth the new scope depth
+     * @param fontStyle  the new font style bitmask to apply if set
+     * @param foreground the new foreground color ID to apply if non-zero
+     * @param background the new background color ID to apply if non-zero
      */
     public void acceptOverwrite(int scopeDepth, int fontStyle, int foreground, int background) {
         if (this.scopeDepth > scopeDepth) {
@@ -115,15 +134,24 @@ public class ThemeTrieElementRule {
             + '}';
     }
 
+    /**
+     * Creates a shallow copy of this rule with identical scope depth, parent scopes, and style values.
+     *
+     * @return a new {@code ThemeTrieElementRule} instance copying state from this instance
+     */
     @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public ThemeTrieElementRule clone() {
         return new ThemeTrieElementRule(scopeDepth, parentScopes, fontStyle, foreground, background);
     }
 
-    //*************************************************************************
-
-    public static List<ThemeTrieElementRule> clone(List<ThemeTrieElementRule> list) {
+    /**
+     * Performs a deep-copy clone of a list of {@link ThemeTrieElementRule} items.
+     *
+     * @param list the list of rules to clone
+     * @return a new list containing cloned instances of all elements
+     */
+    static List<ThemeTrieElementRule> clone(List<ThemeTrieElementRule> list) {
         var result = new ArrayList<ThemeTrieElementRule>(list.size());
         for (var item : list) {
             result.add(item.clone());

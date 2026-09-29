@@ -19,41 +19,47 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A source regular expression.
+ * Represents a source regex string with support for anchor transformations,
+ * and back-reference resolutions.
  *
  * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L582">
  * vscode-textmate/src/rule.ts#L582</a>
  */
 final class RegExpSource {
 
+    /** Regex pattern used to detect numeric back-references (e.g. {@code \1}, {@code \2}). */
     private static final Pattern HAS_BACK_REFERENCES = Pattern.compile("\\\\(\\d+)");
+
+    /** Regex pattern used for matching and replacing back-reference tokens in regex source strings. */
     private static final Pattern BACK_REFERENCING_END = Pattern.compile("\\\\(\\d+)");
 
+    /** The processed regex pattern source string. */
     private String source;
+
+    /** 2D lookup array caching variations of the regex pattern based on {@code \A} and {@code \G} anchors. */
     private String @Nullable [][] anchorCache;
 
-    /**
-     * The ID of the rule associated with this regular expression source.
-     */
+    /** The ID of the rule associated with this regex source. */
     final RuleId ruleId;
 
-    /**
-     * Whether this regular expression source has back references.
-     */
+    /** Whether this regex source has back references. */
     final boolean hasBackReferences;
 
     /**
      * See {@link #RegExpSource(String, RuleId, boolean)}.
+     *
+     * @param regExpSource the source regex string
+     * @param ruleId       the rule ID associated with this pattern
      */
     RegExpSource(String regExpSource, RuleId ruleId) {
         this(regExpSource, ruleId, true);
     }
 
     /**
-     * Creates a new regular expression source.
+     * Creates a new regex source.
      *
-     * @param regExpSource  the source of the regular expression
-     * @param ruleId        the id of the rule associated with this regular expression source
+     * @param regExpSource  the source of the regex
+     * @param ruleId        the id of the rule associated with this regex source
      * @param handleAnchors whether to handle anchors
      */
     RegExpSource(String regExpSource, RuleId ruleId, boolean handleAnchors) {
@@ -99,10 +105,20 @@ final class RegExpSource {
         this.hasBackReferences = HAS_BACK_REFERENCES.matcher(this.source).find();
     }
 
+    /**
+     * Returns the underlying regex source string.
+     *
+     * @return the current regex source string
+     */
     String getSource() {
         return this.source;
     }
 
+    /**
+     * Updates the underlying regex source string and rebuilds the anchor cache if necessary.
+     *
+     * @param newSource the new regex source string
+     */
     void setSource(String newSource) {
         if (Objects.equals(source, newSource)) {
             return;
@@ -114,10 +130,22 @@ final class RegExpSource {
         }
     }
 
+    /**
+     * Checks if this regex source contains cached anchor variations.
+     *
+     * @return {@code true} if an anchor cache is populated; {@code false} otherwise
+     */
     boolean hasAnchor() {
         return anchorCache != null;
     }
 
+    /**
+     * Resolves back-references (e.g., {@code \1}) in the regex using capture values from a prior match.
+     *
+     * @param lineText       the line text sequence where the match occurred
+     * @param captureIndices array of capture indices from the initial match
+     * @return the resolved regex source string
+     */
     String resolveBackReferences(CharSequence lineText, OnigCaptureIndex[] captureIndices) {
         var capturedValues = new ArrayList<String>(captureIndices.length);
         for (var capture : captureIndices) {
@@ -139,6 +167,13 @@ final class RegExpSource {
         });
     }
 
+    /**
+     * Retrieves the appropriate regex string variant based on anchor flags.
+     *
+     * @param allowA whether anchor {@code \A} matching is permitted
+     * @param allowG whether anchor {@code \G} matching is permitted
+     * @return the resolved regex source string for the specified anchor permissions
+     */
     String resolveAnchors(boolean allowA, boolean allowG) {
         var anchorCache = this.anchorCache;
         if (anchorCache == null) {
@@ -148,6 +183,11 @@ final class RegExpSource {
         return anchorCache[allowA ? 1 : 0][allowG ? 1 : 0];
     }
 
+    /**
+     * Creates a clone of this {@link RegExpSource} instance.
+     *
+     * @return a new {@link RegExpSource} instance initialized with the same source string and rule ID
+     */
     @Override
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     protected RegExpSource clone() {
@@ -156,6 +196,12 @@ final class RegExpSource {
 
     //*************************************************************************
 
+    /**
+     * Builds a 2D cache matrix containing transformed regex variants for combinations of
+     * allowed/disallowed {@code \A} and {@code \G} anchors.
+     *
+     * @return a 2x2 matrix of source strings indexed by {@code [allowA ? 1 : 0][allowG ? 1 : 0]}
+     */
     private String[][] buildAnchorCache() {
         var source = this.source;
         var sourceLen = source.length();
@@ -194,7 +240,7 @@ final class RegExpSource {
             }
         }
 
-        return new String[][]{
+        return new String[][] {
             {resultA0G0.toString(), resultA0G1.toString()},
             {resultA1G0.toString(), resultA1G1.toString()}
         };

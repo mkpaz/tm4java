@@ -15,29 +15,24 @@ import tm4java.TMException;
 
 /**
  * A unique identifier for a rule.
- * This is not part of the specification and is used only internally.
  *
- * @see <a href=
- * "https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L14">
- * github.com/microsoft/vscode-textmate/blob/main/src/rule.ts</a>
+ * <p>This is not a part of the specification and is used only internally.
+ *
+ * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L14">
+ * vscode-textmate/src/rule.ts#L14</a>
  */
 public final class RuleId {
 
-    /**
-     * A special constant indicating no rule.
-     */
+    /** Indicates no rule. */
     public static final RuleId NO_RULE = new RuleId(0);
 
-    /**
-     * A special constant indicating that the {@code end} regexp matched.
-     */
+    /** Indicates that the {@code end} regexp matched. */
     public static final RuleId END_RULE = new RuleId(-1);
 
-    /**
-     * A special constant indicating that the {@code while} regexp matched.
-     */
+    /** Indicates that the {@code while} regexp matched. */
     public static final RuleId WHILE_RULE = new RuleId(-2);
 
+    /** The integer value representing this rule identifier. */
     public final int id;
 
     private RuleId(int id) {
@@ -59,6 +54,12 @@ public final class RuleId {
         return false;
     }
 
+    /**
+     * Checks if this rule ID is not equal to another {@link RuleId}.
+     *
+     * @param other the other rule ID to compare with
+     * @return {@code true} if the internal ID values differ; {@code false} if they are identical
+     */
     public boolean notEquals(RuleId other) {
         return id != other.id;
     }
@@ -75,9 +76,16 @@ public final class RuleId {
 
     //*************************************************************************
 
+    /**
+     * Static factory method to instantiate a new valid {@link RuleId}.
+     *
+     * @param id the integer ID, must be non-negative
+     * @return a new {@link RuleId} instance
+     * @throws TMException if {@code id < 0}
+     */
     public static RuleId of(int id) {
         if (id < 0) {
-            throw new TMException("[id] must be > 0");
+            throw new TMException("[id] must be >= 0");
         }
         return new RuleId(id);
     }

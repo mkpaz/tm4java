@@ -9,7 +9,6 @@
 
 package tm4java.internal.grammar.rule;
 
-
 import org.jspecify.annotations.Nullable;
 import tm4java.internal.grammar.raw.IRawGrammar;
 import tm4java.internal.grammar.raw.IRawRepository;
@@ -17,8 +16,10 @@ import tm4java.internal.grammar.raw.IRawRepository;
 /**
  * A registry for managing and retrieving grammars.
  *
- * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L17">
- * vscode-textmate/src/rule.ts#L17</a>
+ * <p>Provides lookups for external TextMate grammars by scope name and repository.
+ *
+ * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/rule.ts#L36">
+ * vscode-textmate/src/rule.ts#L36</a>
  */
 interface IGrammarRegistry {
 
