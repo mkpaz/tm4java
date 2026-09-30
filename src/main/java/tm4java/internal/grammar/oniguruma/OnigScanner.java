@@ -37,23 +37,23 @@ public final class OnigScanner {
      * @return an {@code OnigScannerMatch} if a match is found, {@code null} otherwise
      */
     public @Nullable OnigScannerMatch findNextMatch(OnigString source, int startPos) {
-        if (LOG.isLoggable(Level.DEBUG)) {
-            LOG.log(Level.DEBUG, "[OnigScanner] findNextMatch charPos=%d (strLen=%d, bytesCount=%d) content='%s'"
+        if (LOG.isLoggable(Level.TRACE)) {
+            LOG.log(Level.TRACE, "[OnigScanner] findNextMatch charPos=%d (strLen=%d, bytesCount=%d) content='%s'"
                     .formatted(startPos, source.content.length(), source.bytesCount, source.content));
         }
 
         OnigResult bestResult = search(source, startPos);
         if (bestResult != null) {
             OnigScannerMatch match = new OnigScannerMatch(bestResult, source);
-            if (LOG.isLoggable(Level.DEBUG)) {
-                LOG.log(Level.DEBUG, "[OnigScanner] BEST MATCH found by regex #%d (pattern: %s): %s"
+            if (LOG.isLoggable(Level.TRACE)) {
+                LOG.log(Level.TRACE, "[OnigScanner] BEST MATCH found by regex #%d (pattern: %s): %s"
                         .formatted(bestResult.getIndex(), regExps.get(bestResult.getIndex()).pattern(), match));
             }
             return match;
         }
 
-        if (LOG.isLoggable(Level.DEBUG)) {
-            LOG.log(Level.DEBUG, "[OnigScanner] NO MATCH found");
+        if (LOG.isLoggable(Level.TRACE)) {
+            LOG.log(Level.TRACE, "[OnigScanner] NO MATCH found");
         }
         return null;
     }
@@ -67,8 +67,8 @@ public final class OnigScanner {
      */
     private @Nullable OnigResult search(OnigString source, int charOffset) {
         int byteOffset = source.getByteIndexOfChar(charOffset);
-        if (LOG.isLoggable(Level.DEBUG)) {
-            LOG.log(Level.DEBUG,
+        if (LOG.isLoggable(Level.TRACE)) {
+            LOG.log(Level.TRACE,
                 "[OnigScanner.search] charOffset=%d -> byteOffset=%d".formatted(charOffset, byteOffset)
             );
         }
@@ -87,15 +87,15 @@ public final class OnigScanner {
                     bestResult = result;
                     bestResult.setIndex(index);
 
-                    if (LOG.isLoggable(Level.DEBUG)) {
-                        LOG.log(Level.DEBUG, "[OnigScanner.search] regExp #%d matched at byteLoc=%d (best so far)"
+                    if (LOG.isLoggable(Level.TRACE)) {
+                        LOG.log(Level.TRACE, "[OnigScanner.search] regExp #%d matched at byteLoc=%d (best so far)"
                             .formatted(index, location));
                     }
 
                     // a match at the current offset cannot be beaten
                     if (location == byteOffset) {
-                        if (LOG.isLoggable(Level.DEBUG)) {
-                            LOG.log(Level.DEBUG, "[OnigScanner.search] match at current byteOffset, short-circuit break");
+                        if (LOG.isLoggable(Level.TRACE)) {
+                            LOG.log(Level.TRACE, "[OnigScanner.search] match at current byteOffset, short-circuit break");
                         }
                         break;
                     }

@@ -247,8 +247,8 @@ public final class OnigRegExp implements AutoCloseable {
                 }
 
                 // regexIndex < 0 means debug logging is disabled by the caller
-                if (regexIndex >= 0 && LOG.isLoggable(Level.DEBUG)) {
-                    LOG.log(Level.DEBUG, "[OnigRegExp #%d] Matched! status=%d, pattern='%s', beg=%s, end=%s"
+                if (regexIndex >= 0 && LOG.isLoggable(Level.TRACE)) {
+                    LOG.log(Level.TRACE, "[OnigRegExp #%d] Matched! status=%d, pattern='%s', beg=%s, end=%s"
                         .formatted(regexIndex, status, pattern, result.begAsString(), result.endAsString()));
                 }
                 return result;
