@@ -1,0 +1,95 @@
+name: Compile Oniguruma
+
+on:
+  workflow_dispatch:
+    inputs:
+      onig_version:
+        description: 'Oniguruma Git Tag'
+        required: true
+        default: 'v6.9.10'
+
+jobs:
+  build-native:
+    name: Build (${{ matrix.os }}-${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: x86_64
+            runner: ubuntu-latest
+            lib_name: libonig.so
+            target_dir: linux-x86_64
+            cmake_flags: ""
+          - os: windows
+            arch: x86_64
+            runner: windows-latest
+            lib_name: onig.dll
+            target_dir: windows-x86_64
+            cmake_flags: ""
+          - os: macos
+            arch: x86_64
+            runner: macos-latest
+            lib_name: libonig.dylib
+            target_dir: macos-x86_64
+            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+          - os: macos
+            arch: aarch64
+            runner: macos-latest
+            lib_name: libonig.dylib
+            target_dir: macos-aarch64
+            cmake_flags: "-DCMAKE_OSX_ARCHITECTURES=arm64"
+
+    steps:
+      - name: Prepare | Checkout Oniguruma
+        uses: actions/checkout@v4
+        with:
+          repository: 'kkos/oniguruma'
+          ref: ${{ github.event.inputs.onig_version }}
+          path: 'oniguruma'
+
+      - name: Build | Linux + macOS
+        if: runner.os != 'Windows'
+        run: |
+          cd oniguruma
+          mkdir build && cd build
+          cmake -DBUILD_SHARED_LIBS=ON ${{ matrix.cmake_flags }} ..
+          make -j$(sysctl -n hw.ncpu 2>/dev/null || nproc)
+
+      - name: Build | Windows
+        if: runner.os == 'Windows'
+        run: |
+          cd oniguruma
+          mkdir build; cd build
+          cmake -DBUILD_SHARED_LIBS=ON ..
+          cmake --build . --config Release
+
+      - name: Build | Stage binary
+        shell: bash
+        run: |
+          mkdir -p stage/${{ matrix.target_dir }}
+          find oniguruma/build -name "${{ matrix.lib_name }}" -exec cp {} stage/${{ matrix.target_dir }}/ \;
+
+      - name: Build | Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.target_dir }}
+          path: stage/
+
+  bundle-artifacts:
+    name: Bundle artifacts
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish | Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: bundled-native/
+          merge-multiple: true
+      - name: Publish | Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-resources
+          path: bundled-native/
