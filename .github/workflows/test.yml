@@ -1,0 +1,52 @@
+name: Cross-Platform Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test (${{ matrix.target_dir }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: x86_64
+            jdk_arch: x64
+            runner: ubuntu-latest
+            target_dir: linux-x86_64
+
+          - os: windows
+            arch: x86_64
+            jdk_arch: x64
+            runner: windows-latest
+            target_dir: windows-x86_64
+
+          - os: macos
+            arch: x86_64
+            jdk_arch: x64
+            runner: macos-latest
+            target_dir: macos-x86_64
+
+          - os: macos
+            arch: aarch64
+            jdk_arch: aarch64
+            runner: macos-latest
+            target_dir: macos-aarch64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OpenJDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'zulu'
+          architecture: ${{ matrix.jdk_arch }}
+          cache: 'maven'
+
+      - name: Run Tests
+        shell: bash
+        run: mvn test -Dcheckstyle.skip=true -DargLine="--enable-native-access=tm4java"

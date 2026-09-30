@@ -21,7 +21,7 @@ public final class Resources {
 
     public static Path getDirectory(String path) {
         try {
-            return Paths.get(Objects.requireNonNull(Resources.class.getResource(path)).toURI().getPath());
+            return Path.of(Objects.requireNonNull(Resources.class.getResource(path)).toURI());
         } catch (Exception e) {
             throw new TMException(e.getMessage(), e);
         }
