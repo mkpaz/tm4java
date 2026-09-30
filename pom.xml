@@ -6,7 +6,7 @@
 
     <groupId>io.github.mkpaz</groupId>
     <artifactId>tm4java</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <name>tm4java</name>
     <description>TextMate (VSCode) grammars and themes support for Java</description>
