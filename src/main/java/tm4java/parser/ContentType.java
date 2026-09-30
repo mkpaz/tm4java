@@ -24,7 +24,7 @@ public enum ContentType {
     /** JSON format. */
     JSON("application/json"),
 
-    /** XML / Apple Property List (Plist) format */
+    /** XML / Apple Property List (Plist) format. */
     XML("application/xml"),
 
     /** YAML format. */

@@ -198,15 +198,21 @@ public abstract class OnigString {
         }
 
         private static int getUtf8Length(int codePoint) {
-            if (codePoint <= 0x7F) return 1;
-            if (codePoint <= 0x7FF) return 2;
-            if (codePoint <= 0xFFFF) return 3;
+            if (codePoint <= 0x7F) {
+                return 1;
+            }
+            if (codePoint <= 0x7FF) {
+                return 2;
+            }
+            if (codePoint <= 0xFFFF) {
+                return 3;
+            }
             return 4;
         }
     }
 
     /**
-     * Represents a string is only composed of single-byte characters
+     * Represents a string is only composed of single-byte characters.
      */
     static final class SingleByteString extends OnigString {
 

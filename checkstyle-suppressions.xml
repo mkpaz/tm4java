@@ -3,5 +3,6 @@
         "https://checkstyle.sourceforge.io/dtds/suppressions_1_0.dtd">
 
 <suppressions>
+    <suppress checks="PackageName" files=".*[/\\]tm4java[/\\]"/>
     <suppress checks=".*" files=".*nanojson/.*" />
 </suppressions>

@@ -78,7 +78,7 @@ final class BasicScopeAttributesProvider {
             return BasicScopeAttributesProvider.NULL_SCOPE_METADATA;
         }
 
-        return cache.computeIfAbsent(scopeName, scopeName_ -> {
+        return cache.computeIfAbsent(scopeName, _ -> {
             var languageId = scopeToLanguage(scopeName);
             var standardTokenType = toStandardTokenType(scopeName);
             return new BasicScopeAttributes(languageId, standardTokenType);
