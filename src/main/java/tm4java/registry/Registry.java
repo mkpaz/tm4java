@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static java.lang.System.Logger.Level.WARNING;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * The registry is the main entry point for working with {@code tm4java}.

@@ -11,7 +11,7 @@ package tm4java.internal.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;

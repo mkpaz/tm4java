@@ -15,13 +15,13 @@ import tm4java.grammar.EncodedTokenAttributes;
 import tm4java.grammar.IToken;
 import tm4java.internal.grammar.tokenattrs.OptionalStandardTokenType;
 import tm4java.internal.theme.FontStyle;
-import tm4java.internal.utils.StringUtils;
+import tm4java.internal.utils.Strings;
 
 import java.lang.System.Logger;
 import java.util.*;
 
 import static java.lang.System.Logger.Level.TRACE;
-import static tm4java.internal.utils.CollectionUtils.getElementAt;
+import static tm4java.internal.utils.Iterables.getElementAt;
 
 /**
  * Accumulates and builds tokens (either human-readable or encoded binary tokens)
@@ -83,7 +83,7 @@ final class LineTokens {
         this.tokenTypeOverrides = tokenTypeOverrides;
         this.lineText = LOGGER.isLoggable(TRACE) ? lineText : ""; // store line only if it's logged
         this.origLineLength = origLineLength;
-        this.mergeConsecutiveTokensWithEqualMetadata = this.emitBinaryTokens && !StringUtils.containsRTL(lineText);
+        this.mergeConsecutiveTokensWithEqualMetadata = this.emitBinaryTokens && !Strings.containsRTL(lineText);
 
         if (this.emitBinaryTokens) {
             this.tokens = EMPTY_DEQUE;

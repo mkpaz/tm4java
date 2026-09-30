@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static tm4java.internal.utils.StringUtils.strArrCmp;
+import static tm4java.internal.utils.Strings.strArrCmp;
 
 /**
  * Represents a node in the prefix tree (Trie) used for efficient scope matching and theme rule lookup.

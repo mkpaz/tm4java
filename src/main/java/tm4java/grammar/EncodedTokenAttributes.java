@@ -24,7 +24,7 @@ import tm4java.internal.theme.FontStyle;
 public final class EncodedTokenAttributes {
 
     private EncodedTokenAttributes() {
-        // utility
+        // utility class
     }
 
     /**

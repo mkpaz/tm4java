@@ -16,18 +16,18 @@ package tm4java.internal.utils;
  * vscode-textmate/src/utils.ts#L59</a>
  */
 @SuppressWarnings("RegExpRedundantEscape")
-public final class RegexUtils {
+public final class Patterns {
 
-    private RegexUtils() {
+    private Patterns() {
         // utility class
     }
 
     /**
-     * Escapes/prefixes RegExp meta characters with a backslash in the given string.
-     * <p>
-     * It is a non-regex based faster alternative to the
+     * Escapes/prefixes RegExp meta characters with a backslash in the given character sequence.
+     *
+     * <p>It is a non-regex based faster alternative to the
      * <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/utils.ts#L159">
-     * TypeScript implementation</a>
+     * TypeScript implementation</a>:
      *
      * <pre>{@code
      * function escapeRegExpCharacters(value: string): string {
@@ -35,20 +35,25 @@ public final class RegexUtils {
      * }
      * }</pre>
      *
+     * @param value the character sequence in which meta characters need to be escaped
      * @return a string with the RegExp meta characters escaped
+     * @throws NullPointerException if {@code value} is {@code null}
      */
-    public static String escapeRegExpCharacters(CharSequence value) {
+    public static String escapeRegexCharacters(CharSequence value) {
         int valueLen = value.length();
         var sb = new StringBuilder(valueLen);
 
         for (int i = 0; i < valueLen; i++) {
-            final char ch = value.charAt(i);
+            char ch = value.charAt(i);
             switch (ch) {
                 case '-', '\\', '{', '}', '*', '+', '?', '|', '^', '$', '.', ',', '[', ']', '(', ')', '#':
                     // escaping white space chars is actually not necessary:
                     // ' ', '\t', '\n', '\f', '\r',
                     // 0x0B: // vertical tab \v
                     sb.append('\\');
+                    break;
+                default:
+                    break;
             }
             sb.append(ch);
         }

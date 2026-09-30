@@ -17,7 +17,7 @@ import tm4java.parser.ContentType;
 import tm4java.theme.IThemeSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 @NullMarked
 public class ThemeTypeTest {

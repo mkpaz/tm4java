@@ -15,41 +15,41 @@ import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
 @NullMarked
-public class StringUtilsTest {
+public class StringsTest {
 
     @Test
     void testSplitToArray() {
-        assertThat(StringUtils.splitToArray("", '.'))
+        assertThat(Strings.splitToArray("", '.'))
             .containsExactly("");
-        assertThat(StringUtils.splitToArray("abc", '.'))
+        assertThat(Strings.splitToArray("abc", '.'))
             .containsExactly("abc");
-        assertThat(StringUtils.splitToArray("abc.", '.'))
+        assertThat(Strings.splitToArray("abc.", '.'))
             .containsExactly("abc", "");
-        assertThat(StringUtils.splitToArray(".abc.", '.'))
+        assertThat(Strings.splitToArray(".abc.", '.'))
             .containsExactly("", "abc", "");
-        assertThat(StringUtils.splitToArray(".", '.'))
+        assertThat(Strings.splitToArray(".", '.'))
             .containsExactly("", "");
-        assertThat(StringUtils.splitToArray("...", '.'))
+        assertThat(Strings.splitToArray("...", '.'))
             .containsExactly("", "", "", "");
-        assertThat(StringUtils.splitToArray("1.2.3.4.5.6.7.8", '.'))
+        assertThat(Strings.splitToArray("1.2.3.4.5.6.7.8", '.'))
             .containsExactly("1", "2", "3", "4", "5", "6", "7", "8");
     }
 
     @Test
     public void testSplitToList() {
-        assertThat(StringUtils.splitToList("", '.'))
+        assertThat(Strings.splitToList("", '.'))
             .containsExactly("");
-        assertThat(StringUtils.splitToList("abc", '.'))
+        assertThat(Strings.splitToList("abc", '.'))
             .containsExactly("abc");
-        assertThat(StringUtils.splitToList("abc.", '.'))
+        assertThat(Strings.splitToList("abc.", '.'))
             .containsExactly("abc", "");
-        assertThat(StringUtils.splitToList(".abc.", '.'))
+        assertThat(Strings.splitToList(".abc.", '.'))
             .containsExactly("", "abc", "");
-        assertThat(StringUtils.splitToList(".", '.'))
+        assertThat(Strings.splitToList(".", '.'))
             .containsExactly("", "");
-        assertThat(StringUtils.splitToList("...", '.'))
+        assertThat(Strings.splitToList("...", '.'))
             .containsExactly("", "", "", "");
-        assertThat(StringUtils.splitToList("1.2.3.4.5.6.7.8", '.'))
+        assertThat(Strings.splitToList("1.2.3.4.5.6.7.8", '.'))
             .containsExactly("1", "2", "3", "4", "5", "6", "7", "8");
     }
 }

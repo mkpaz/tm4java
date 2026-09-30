@@ -21,7 +21,7 @@ import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 @NullMarked
 public class RawThemeReaderTest {

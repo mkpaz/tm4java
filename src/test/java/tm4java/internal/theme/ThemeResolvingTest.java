@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import tm4java.internal.grammar.ScopeStack;
-import tm4java.internal.utils.StringUtils;
+import tm4java.internal.utils.Strings;
 import tm4java.theme.StyleAttributes;
 
 /**
@@ -47,7 +47,7 @@ public class ThemeResolvingTest extends AbstractThemeTest {
     @DisplayName("Theme resolving strcmp works")
     public void testStrCmpWorks() {
         var actual = Arrays.asList("bar", "z", "zu", "a", "ab", "");
-        actual.sort(StringUtils::strCmp);
+        actual.sort(Strings::strCmp);
 
         var expected = List.of("", "a", "ab", "bar", "z", "zu");
         assertThat(actual).isEqualTo(expected);
@@ -543,6 +543,6 @@ public class ThemeResolvingTest extends AbstractThemeTest {
                                 @Nullable List<String> a,
                                 @Nullable List<String> b,
                                 int expected) {
-        assertThat(StringUtils.strArrCmp(a, b)).as(testCase).isEqualTo(expected);
+        assertThat(Strings.strArrCmp(a, b)).as(testCase).isEqualTo(expected);
     }
 }

@@ -15,7 +15,7 @@ import tm4java.internal.grammar.raw.IRawCaptures;
 import tm4java.internal.grammar.raw.IRawRepository;
 import tm4java.internal.grammar.raw.IRawRule;
 import tm4java.internal.grammar.raw.RawRule;
-import tm4java.internal.utils.NullSafetyHelper;
+import tm4java.internal.utils.NullSafety;
 
 import java.lang.System.Logger;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static java.lang.System.Logger.Level.DEBUG;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * Factory utility for constructing and compiling concrete TextMate {@link Rule} instances
@@ -94,13 +94,13 @@ public final class RuleFactory {
                         desc.getContentName(),
                         begin,
                         compileCaptures(
-                            NullSafetyHelper.defaultIfNull(desc.getBeginCaptures(), desc.getCaptures()),
+                            NullSafety.defaultIfNull(desc.getBeginCaptures(), desc.getCaptures()),
                             helper,
                             repository
                         ),
                         ruleWhile,
                         compileCaptures(
-                            NullSafetyHelper.defaultIfNull(desc.getWhileCaptures(), desc.getCaptures()),
+                            NullSafety.defaultIfNull(desc.getWhileCaptures(), desc.getCaptures()),
                             helper,
                             repository
                         ),
@@ -114,13 +114,13 @@ public final class RuleFactory {
                     desc.getContentName(),
                     begin,
                     compileCaptures(
-                        NullSafetyHelper.defaultIfNull(desc.getBeginCaptures(), desc.getCaptures()),
+                        NullSafety.defaultIfNull(desc.getBeginCaptures(), desc.getCaptures()),
                         helper,
                         repository
                     ),
                     desc.getEnd(),
                     compileCaptures(
-                        NullSafetyHelper.defaultIfNull(desc.getEndCaptures(), desc.getCaptures()),
+                        NullSafety.defaultIfNull(desc.getEndCaptures(), desc.getCaptures()),
                         helper,
                         repository
                     ),

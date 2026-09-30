@@ -22,7 +22,7 @@ import java.util.*;
 
 import static java.lang.System.Logger.Level.INFO;
 import static java.lang.System.Logger.Level.TRACE;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * Executes tokenization for a single line of text according to TextMate grammar rules and state stacks.

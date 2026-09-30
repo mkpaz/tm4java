@@ -15,21 +15,23 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * A utility class for performing common operations on collections.
+ * A utility class for performing operations on collections.
  */
-public final class CollectionUtils {
+public final class Iterables {
 
-    private CollectionUtils() {
+    private Iterables() {
         // utility class
     }
 
     /**
      * Finds the first element in the list that matches the given predicate.
      *
+     * @param <T>    the type of elements in the list
      * @param list   the list to search
      * @param filter the predicate to test elements against
+     * @return the first matching element, or {@code null} if no element matches
      */
-    public static @Nullable <T> T findFirst(List<T> list, Predicate<T> filter) {
+    public static <T> @Nullable T findFirst(List<T> list, Predicate<T> filter) {
         for (T e : list) {
             if (filter.test(e)) {
                 return e;
@@ -41,10 +43,13 @@ public final class CollectionUtils {
     /**
      * Retrieves the element at the specified index in the list.
      *
-     * @param list  a non-empty list
-     * @param index the element to get; negative index counts from end of list,
-     *              e.g. -1 = last element.
-     * @throws IndexOutOfBoundsException if the index is out of bounds
+     * @param <T>   the type of elements in the list
+     * @param list  the list from which to retrieve the element
+     * @param index the index of the element to get; negative index counts from end of list,
+     *              e.g. -1 = last element
+     * @return the element at the specified index
+     * @throws IndexOutOfBoundsException if the index is out of range
+     *                                   ({@code index >= list.size()} or {@code index < -list.size()})
      */
     public static <T> T getElementAt(List<T> list, int index) {
         if (index < 0) {

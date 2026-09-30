@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.System.Logger.Level.ERROR;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * A DOM-based implementation of the {@link TMParser} for parsing

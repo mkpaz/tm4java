@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * Represents a "pushed" state on the state stack during TextMate grammar tokenization.

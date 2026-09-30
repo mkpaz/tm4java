@@ -10,7 +10,7 @@
 package tm4java.parser;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 import java.io.IOException;
 import java.io.StringReader;

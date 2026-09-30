@@ -11,7 +11,7 @@ package tm4java.internal.grammar.rule;
 
 import org.jspecify.annotations.Nullable;
 import tm4java.internal.grammar.oniguruma.OnigCaptureIndex;
-import tm4java.internal.utils.RegexUtils;
+import tm4java.internal.utils.Patterns;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -156,7 +156,7 @@ final class RegExpSource {
             try {
                 int index = Integer.parseInt(match.group(1));
                 if (index < captureIndices.length) {
-                    var replacement = RegexUtils.escapeRegExpCharacters(capturedValues.get(index));
+                    var replacement = Patterns.escapeRegexCharacters(capturedValues.get(index));
                     // see https://stackoverflow.com/a/70785772/5116073
                     return Matcher.quoteReplacement(replacement);
                 }

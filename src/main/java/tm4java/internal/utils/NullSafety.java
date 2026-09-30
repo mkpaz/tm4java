@@ -13,23 +13,23 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A utility class for handling null safety in a more controlled manner.
+ * A utility class for handling null safety.
  */
-public final class NullSafetyHelper {
+public final class NullSafety {
 
-    private NullSafetyHelper() {
+    private NullSafety() {
         // utility class
     }
 
     /**
      * Casts a non-null value marked as {@link Nullable} to {@link NonNull}.
-     * <p>
-     * Only use if you are sure the value is non-null but annotation-based null
+     *
+     * <p>Only use if you are sure the value is non-null but annotation-based null
      * analysis was not able to determine it.
      *
      * @throws IllegalStateException if the given value is null
      */
-    public static <T> @NonNull T castNonNull(@Nullable T value) {
+    public static <T> T castNonNull(@Nullable T value) {
         if (value == null) {
             throw new IllegalStateException("Unexpected null value present.");
         }
@@ -38,12 +38,10 @@ public final class NullSafetyHelper {
 
     /**
      * Returns the given object if it is non-null; otherwise, returns the default value.
-     * <p>
-     * Unlike {@code Objects.requireNonNullElse()} this does allow the default
-     * value to return null.
+     *
+     * <p>Unlike {@code Objects.requireNonNullElse()} this does allow the default value to return null.
      */
-    public static <T> @Nullable T defaultIfNull(@Nullable T obj,
-                                                @Nullable T defaultValue) {
+    public static <T> @Nullable T defaultIfNull(@Nullable T obj, @Nullable T defaultValue) {
         if (obj == null) {
             return defaultValue;
         }

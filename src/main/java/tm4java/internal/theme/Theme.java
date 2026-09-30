@@ -11,16 +11,16 @@ package tm4java.internal.theme;
 
 import org.jspecify.annotations.Nullable;
 import tm4java.internal.grammar.ScopeStack;
-import tm4java.internal.utils.StringUtils;
+import tm4java.internal.utils.Strings;
 import tm4java.theme.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static tm4java.internal.utils.CollectionUtils.findFirst;
-import static tm4java.internal.utils.StringUtils.strArrCmp;
-import static tm4java.internal.utils.StringUtils.strCmp;
+import static tm4java.internal.utils.Iterables.findFirst;
+import static tm4java.internal.utils.Strings.strArrCmp;
+import static tm4java.internal.utils.Strings.strCmp;
 
 /**
  * Concrete implementation of {@link ITheme} representing a compiled TextMate theme.
@@ -214,7 +214,7 @@ public final class Theme implements ITheme {
             if (settingScope instanceof String scope) {
                 scope = scope.replaceAll("^,+", ""); // remove leading commas
                 scope = scope.replaceAll(",+$", ""); // remove trailing commas
-                scopes = StringUtils.splitToList(scope, ',');
+                scopes = Strings.splitToList(scope, ',');
             } else if (settingScope instanceof List) {
                 @SuppressWarnings("unchecked")
                 var settingScopes = (List<String>) settingScope;
@@ -228,7 +228,7 @@ public final class Theme implements ITheme {
             if (settingsFontStyle != null) {
                 fontStyle = FontStyle.NONE;
 
-                var segments = StringUtils.splitToArray(settingsFontStyle, ' ');
+                var segments = Strings.splitToArray(settingsFontStyle, ' ');
                 for (var segment : segments) {
                     fontStyle = switch (segment) {
                         case "italic" -> fontStyle | FontStyle.ITALIC;
@@ -251,7 +251,7 @@ public final class Theme implements ITheme {
             }
 
             for (String s : scopes) {
-                var segments = StringUtils.splitToList(s.trim(), ' ');
+                var segments = Strings.splitToList(s.trim(), ' ');
                 var scope = segments.getLast();
 
                 List<String> parentScopes = null;

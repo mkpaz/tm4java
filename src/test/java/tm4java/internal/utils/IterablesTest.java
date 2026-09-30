@@ -17,18 +17,18 @@ import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Test;
 
 @NullMarked
-public class CollectionUtilsTest {
+public class IterablesTest {
 
     @Test
     public void testGetElementAt() {
-        assertThat(CollectionUtils.getElementAt(List.of(1, 2, 3), 0)).isEqualTo(1);
-        assertThat(CollectionUtils.getElementAt(List.of(1, 2, 3), -1)).isEqualTo(3);
-        assertThat(CollectionUtils.getElementAt(List.of(1, 2, 3), -2)).isEqualTo(2);
-        assertThat(CollectionUtils.getElementAt(List.of(1, 2, 3), -3)).isEqualTo(1);
+        assertThat(Iterables.getElementAt(List.of(1, 2, 3), 0)).isEqualTo(1);
+        assertThat(Iterables.getElementAt(List.of(1, 2, 3), -1)).isEqualTo(3);
+        assertThat(Iterables.getElementAt(List.of(1, 2, 3), -2)).isEqualTo(2);
+        assertThat(Iterables.getElementAt(List.of(1, 2, 3), -3)).isEqualTo(1);
 
-        assertThatThrownBy(() -> CollectionUtils.getElementAt(List.of(1, 2, 3), -4))
+        assertThatThrownBy(() -> Iterables.getElementAt(List.of(1, 2, 3), -4))
             .isInstanceOf(ArrayIndexOutOfBoundsException.class);
-        assertThatThrownBy(() -> CollectionUtils.getElementAt(List.of(1, 2, 3), 4))
+        assertThatThrownBy(() -> Iterables.getElementAt(List.of(1, 2, 3), 4))
             .isInstanceOf(ArrayIndexOutOfBoundsException.class);
     }
 }

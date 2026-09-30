@@ -9,30 +9,23 @@
 
 package tm4java.internal.utils;
 
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.System.Logger.Level;
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.function.Supplier;
-import org.jspecify.annotations.Nullable;
-import tm4java.internal.grammar.Grammar;
+
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * A utility class for cloning objects.
  */
 public final class ObjectCloner {
 
-    private static final System.Logger LOGGER = System.getLogger(Grammar.class.getName());
+    private static final System.Logger LOGGER = System.getLogger(ObjectCloner.class.getName());
+
     private static final WeakHashMap<Class<?>, Optional<Method>> CLONE_METHODS_CACHE = new WeakHashMap<>();
 
     private ObjectCloner() {
@@ -41,6 +34,10 @@ public final class ObjectCloner {
 
     /**
      * Performs a deep clone of the given source object.
+     *
+     * @param <T>    the type of the object to clone
+     * @param source the object to be cloned
+     * @return a deep clone of the source object
      */
     public static <T> T deepClone(T source) {
         return deepClone(source, new IdentityHashMap<>());
@@ -48,6 +45,15 @@ public final class ObjectCloner {
 
     //*************************************************************************
 
+    /**
+     * Internal recursive method performing a deep clone using a buffer to preserve
+     * identity and manage object cycles.
+     *
+     * @param <T>    the type of the object to clone
+     * @param source the object to clone
+     * @param buffer a map holding references to already cloned objects
+     * @return a deep clone of the object
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static <T> T deepClone(T source, Map<Object, @Nullable Object> buffer) {
         Object clone = buffer.get(source);
@@ -101,7 +107,15 @@ public final class ObjectCloner {
         return shallowClone;
     }
 
-    private static @Nullable <T> T deepCloneNullable(@Nullable T source,
+    /**
+     * Helper method to deep clone an object that can be {@code null}.
+     *
+     * @param <T>    the type of the object
+     * @param source the object to clone, which may be {@code null}
+     * @param buffer a map holding references to already cloned objects
+     * @return the deep cloned object, or {@code null} if source was {@code null}
+     */
+    private static <T> @Nullable T deepCloneNullable(@Nullable T source,
                                                      Map<Object, @Nullable Object> buffer) {
         if (source == null) {
             return null;
@@ -110,6 +124,15 @@ public final class ObjectCloner {
         return deepClone(source, buffer);
     }
 
+    /**
+     * Performs a shallow clone of the object via reflection if it implements {@link Cloneable},
+     * otherwise falls back to the provided supplier.
+     *
+     * @param <T>      the type of the object
+     * @param source   the object to shallow clone
+     * @param fallback the fallback supplier if reflection cloning fails or is unavailable
+     * @return a shallow clone of the object or the fallback result
+     */
     @SuppressWarnings("unchecked")
     private static <T> T shallowClone(T source, Supplier<T> fallback) {
         if (source instanceof Cloneable) {

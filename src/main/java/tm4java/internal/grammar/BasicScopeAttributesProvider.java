@@ -12,7 +12,7 @@ package tm4java.internal.grammar;
 import org.jspecify.annotations.Nullable;
 import tm4java.TMException;
 import tm4java.internal.grammar.tokenattrs.OptionalStandardTokenType;
-import tm4java.internal.utils.RegexUtils;
+import tm4java.internal.utils.Patterns;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -141,7 +141,7 @@ final class BasicScopeAttributesProvider {
 
                 // create the regex
                 var escapedScopes = values.keySet().stream()
-                    .map(RegexUtils::escapeRegExpCharacters)
+                    .map(Patterns::escapeRegexCharacters)
                     .sorted(Collections.reverseOrder()) // longest scope first
                     .toArray(String[]::new);
 

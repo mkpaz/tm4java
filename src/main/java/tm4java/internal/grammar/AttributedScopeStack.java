@@ -12,7 +12,7 @@ package tm4java.internal.grammar;
 import org.jspecify.annotations.Nullable;
 import tm4java.grammar.EncodedTokenAttributes;
 import tm4java.internal.theme.FontStyle;
-import tm4java.internal.utils.StringUtils;
+import tm4java.internal.utils.Strings;
 import tm4java.theme.StyleAttributes;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import static tm4java.internal.utils.NullSafetyHelper.castNonNull;
+import static tm4java.internal.utils.NullSafety.castNonNull;
 
 /**
  * Represents a stack of scope names associated with encoded token attributes.
@@ -97,7 +97,7 @@ final class AttributedScopeStack {
             return pushAttributed(this, scopePath, grammar);
         }
 
-        var scopes = StringUtils.splitToArray(scopePath, ' ');
+        var scopes = Strings.splitToArray(scopePath, ' ');
         var result = this;
         for (var scope : scopes) {
             result = pushAttributed(result, scope, grammar);
