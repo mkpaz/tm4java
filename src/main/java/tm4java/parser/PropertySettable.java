@@ -29,7 +29,7 @@ public interface PropertySettable<V> {
      * @param name  the name of the property
      * @param value the value of the property
      */
-    void setProperty(String name, V value);
+    void setProperty(String name, @Nullable V value);
 
     //*************************************************************************
 

@@ -204,7 +204,7 @@ public final class RuleFactory {
      * @param repository the current repository context
      * @return the result holding compiled rule IDs and missing pattern status
      */
-    @SuppressWarnings("CallToPrintStackTrace")
+    @SuppressWarnings({"CallToPrintStackTrace", "ExtractMethodRecommender"})
     private static CompilePatternsResult compilePatterns(@Nullable Collection<IRawRule> patterns,
                                                          IRuleFactoryHelper helper,
                                                          IRawRepository repository) {

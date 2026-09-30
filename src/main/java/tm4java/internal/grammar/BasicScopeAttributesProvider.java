@@ -145,6 +145,7 @@ final class BasicScopeAttributesProvider {
                     .sorted(Collections.reverseOrder()) // longest scope first
                     .toArray(String[]::new);
 
+                //language=OFF
                 scopesRegExp = Pattern.compile("^((" + String.join(")|(", escapedScopes) + "))($|\\.)");
             }
         }

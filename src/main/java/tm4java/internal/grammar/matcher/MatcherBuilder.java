@@ -227,7 +227,7 @@ final class MatcherBuilder<T> {
      * @see <a href="https://github.com/microsoft/vscode-textmate/tree/v9.2.0/src/matcher.ts#L93">
      * vscode-textmate/src/matcher.ts</a>
      */
-    @SuppressWarnings("RegExpRedundantEscape")
+    @SuppressWarnings({"RegExpRedundantEscape", "ClassCanBeRecord"})
     private static final class Tokenizer {
 
         /** Regex pattern matching priority prefixes, scope identifiers, separators, and punctuation. */

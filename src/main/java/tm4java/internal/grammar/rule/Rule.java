@@ -98,7 +98,7 @@ public abstract class Rule {
     public abstract void collectPatterns(IRuleRegistry grammar, RegExpSourceList out);
 
     /**
-     * Compiles this rule into a executable regex matching rule.
+     * Compiles this rule into an executable regex matching rule.
      *
      * @param grammar        the rule registry for resolving child rules
      * @param endRegexSource resolved regex string for dynamic end pattern, or {@code null}

@@ -10,7 +10,6 @@
 package tm4java.internal.utils;
 
 import org.jspecify.annotations.Nullable;
-import tm4java.TMException;
 
 import java.io.*;
 import java.net.JarURLConnection;
@@ -33,7 +32,7 @@ public final class Resources {
     /**
      * Returns a reader for the specified resource.
      *
-     * @param anchor        the class to be used for resource lookup
+     * @param anchor       the class to be used for resource lookup
      * @param resourceName the name of the resource
      * @return a {@link BufferedReader} for reading the resource
      * @throws FileNotFoundException if the resource is not found on the classpath
@@ -45,7 +44,7 @@ public final class Resources {
     /**
      * Retrieves a reader for the specified resource with an optional charset.
      *
-     * @param anchor        the class to be used for resource lookup
+     * @param anchor       the class to be used for resource lookup
      * @param resourceName the name of the resource
      * @param charset      the charset to use, or null for default (UTF-8)
      * @return a {@link BufferedReader} for reading the resource
@@ -64,7 +63,7 @@ public final class Resources {
     /**
      * Returns the last modified time (ms since epoch) for a classpath resource.
      *
-     * @param anchor        the class to be used for resource lookup
+     * @param anchor       the class to be used for resource lookup
      * @param resourceName the name of the resource
      * @return the last modified time in milliseconds since epoch
      * @throws IOException           on I/O errors
@@ -102,7 +101,7 @@ public final class Resources {
      * <p>If the resource exists, its URI is returned. Otherwise, a fallback URI is created
      * based on the class's code-source location.
      *
-     * @param anchor        the class to be used for resource lookup
+     * @param anchor       the class to be used for resource lookup
      * @param resourceName the name of the resource
      * @return the resolved {@link URI} for the resource
      * @throws IllegalArgumentException if the code source or its location cannot be determined

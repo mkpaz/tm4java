@@ -64,7 +64,7 @@ public class RawCaptures extends PropertySettable.HashMap<IRawRule> implements I
      * @throws ClassCastException if a non-filtered entry value cannot be cast to {@link IRawRule}
      */
     @Override
-    public void forEachCapture(BiConsumer<String, IRawRule> action) {
+    public void forEachCapture(BiConsumer<String, @Nullable IRawRule> action) {
         forEach((String captureId, Object rule) -> {
             try {
                 // to handle e.g.

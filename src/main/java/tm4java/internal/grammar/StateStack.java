@@ -44,7 +44,7 @@ public final class StateStack implements IStateStack {
      * @param ruleId                the ID of the rule associated with this frame
      * @param enterPos              the line character index where the rule was entered
      * @param anchorPos             the line anchor position for the rule
-     * @param beginRuleCapturedEOL  whether the begin pattern matched across the end of the line
+     * @param beginRuleCapturedEOL  whether the "begin" pattern matched across the end of the line
      * @param endRule               the dynamic regex pattern required to pop/exit this state
      * @param nameScopesList        the scope list frames corresponding to the rule's name
      * @param contentNameScopesList the scope list frames corresponding to the rule's contentName
