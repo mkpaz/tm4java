@@ -1,11 +1,11 @@
-## tm4java
+# tm4java
 
 TextMate (VSCode) grammars and themes support for Java.
 
 This project is a fork of Eclipse [tm4e-core](https://github.com/eclipse-tm4e/tm4e)
 which is a Java port of [vscode-textmate](https://github.com/microsoft/vscode-textmate).
 
-### Intro
+## Intro
 
 TL;DR:
 
@@ -27,7 +27,7 @@ Links:
 You can find many grammars in [tests](src/test/resources/tm4java/language_pack) or in specialized repos,
 such as [textmate-grammars-themes](https://github.com/shikijs/textmate-grammars-themes).
 
-### Usage
+## Usage
 
 Maven:
 
@@ -51,13 +51,13 @@ dependencies {
 }
 ```
 
-#### Dependencies
+### Dependencies
 
 The only dependency is [org.jruby.joni](https://github.com/jruby/joni) which is a port
 of [Oniguruma](https://github.com/kkos/oniguruma) regexp library, because the TextMate grammars
 are based on Oniguruma regular expressions.
 
-#### Example
+### Example
 
 ```java
 // the registry is the main entry point; it's used to register grammars and set up a theme.
@@ -98,11 +98,22 @@ BiConsumer<String, IToken> printer = (line, token) -> {
 // - tokenize the whole text if it doesn't contain too many lines
 // - tokenize it line-by-line; in this case, the state should be maintained
 IStateStack state = null;
-for (var line : text.split("\r?\n")) {
-    ITokenizeLineResult<IToken[]> result = grammar.tokenizeLine(line, state, Duration.ofSeconds(1));
-    state = result.ruleStack();
-    Arrays.stream(result.tokens()).forEach(token -> printer.accept(line, token));
-}
+for(
+var line :text.
+
+split("\r?\n")){
+ITokenizeLineResult<IToken[]> result = grammar.tokenizeLine(line, state, Duration.ofSeconds(1));
+state =result.
+
+ruleStack();
+    Arrays.
+
+stream(result.tokens()).
+
+forEach(token ->printer.
+
+accept(line, token));
+    }
 ```
 
 The result of this code is:
@@ -121,11 +132,48 @@ Style:	StyleAttributes{fontStyle=-1, foregroundId=5, backgroundId=0}
 
 You can find the full version of this example in [UsageTest.java](src/test/java/tm4java/UsageTest.java).
 
-### Benchmark
+## Benchmark
 
-See [BENCHMARK.md](BENCHMARK.md).
+The JMH [`GrammarBenchmark`](src/test/java/tm4java/benchmark/GrammarBenchmark.java) measures the performance and memory
+allocations of tokenizing a source file line-by-line using `Grammar#tokenizeLine()`. The benchmark preloads
+[`GrammarBenchmark.JavaFile.txt`](src/test/resources/tm4java/benchmark/GrammarBenchmark.JavaFile.txt) and processes
+its entire contents during each iteration.
 
-### Why fork?
+Current version (Oniguruma FFM with cache optimizations):
+
+```txt
+Benchmark                                             Mode  Cnt        Score       Error   Units
+GrammarBenchmark.tokenizeGrammar                     thrpt   10       18,525 ±     0,567   ops/s
+GrammarBenchmark.tokenizeGrammar:gc.alloc.rate       thrpt   10      113,760 ±     4,728  MB/sec
+GrammarBenchmark.tokenizeGrammar:gc.alloc.rate.norm  thrpt   10  6439736,838 ± 71624,596    B/op
+GrammarBenchmark.tokenizeGrammar:gc.count            thrpt   10       11,000              counts
+GrammarBenchmark.tokenizeGrammar:gc.time             thrpt   10      121,000                  ms
+```
+
+Earlier version (Joni - an Oniguruma port to Java, used by TM4E):
+
+```txt
+Benchmark                                             Mode  Cnt        Score      Error   Units
+GrammarBenchmark.tokenizeGrammar                     thrpt   10         8,375 ±   0,769   ops/s
+GrammarBenchmark.tokenizeGrammar:gc.alloc.rate       thrpt   10       145,882 ±  13,378  MB/sec
+GrammarBenchmark.tokenizeGrammar:gc.alloc.rate.norm  thrpt   10  18270605,978 ± 156,599    B/op
+GrammarBenchmark.tokenizeGrammar:gc.count            thrpt   10        14,000            counts
+GrammarBenchmark.tokenizeGrammar:gc.time             thrpt   10        54,000                ms
+```
+
+Key Takeaways:
+
+- 2.2x throughput increase: Tokenization performance improved from ~8,375 ops/s to ~18,525 ops/s
+  reducing the average execution time per full-file tokenization from ~119 ms down to ~54 ms.
+- 65% memory reduction: Heap allocations per operation were reduced from ~18.27 MB/op down to ~6.44 MB/op.
+
+To run the benchmark:
+
+```txt
+mvn test -DskipTests -P benchmark
+```
+
+## Why fork?
 
 TM4E is not published in Maven Central, as Eclipse uses its own release ecosystem. It is not modularized
 because Eclipse uses OSGi instead of Java modules, and depends on both Google Gson and SnakeYAML.
