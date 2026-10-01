@@ -1,22 +1,24 @@
 # tm4java
 
-TextMate (VSCode) grammars and themes support for Java.
+TextMate (VSCode) grammar and theme support for Java.
 
-This project is a fork of Eclipse [tm4e-core](https://github.com/eclipse-tm4e/tm4e)
-which is a Java port of [vscode-textmate](https://github.com/microsoft/vscode-textmate).
+This project is a fork of Eclipse [tm4e-core](https://github.com/eclipse-tm4e/tm4e), which is a Java port
+of [vscode-textmate](https://github.com/microsoft/vscode-textmate).
+
+- Compiled with Java 25.
+- No external dependencies. A single ~1 MB multi-platform JAR that includes the compiled Oniguruma native binaries.
 
 ## Intro
 
 TL;DR:
 
-- You feed the source code text to the tokenizer, which is powered by a corresponding grammar.
-- The grammar is a file that defines a set of regex patterns based on Oniguruma syntax.
-- The result is a list of tokens, with each token associated with one or more scopes (selectors).
-- Scopes are hierarchical and sorted from least specific to most specific.
-- You use the obtained scope(s) as a selector to query the theme rules that define what style (text color, font)
-  should be used to display the text.
-- For this reason, the scopes defined in the grammar shouldn't be random but should follow naming conventions,
-  allowing one theme to cover multiple (preferably all) grammars.
+- You feed source code text into the tokenizer, which is powered by the corresponding grammar.
+- A grammar file defines a set of regex patterns using Oniguruma syntax.
+- The output is a list of tokens, with each token assigned one or more scopes (selectors).
+- Scopes are hierarchical, ordered from least specific to most specific.
+- You use the resulting scope(s) as selectors to query theme rules that specify visual styles (text color, font
+  attributes). Because of this, scope names should adhere to standard naming conventions so a single theme can support
+  multiple grammars.
 
 Links:
 
@@ -36,7 +38,7 @@ Maven:
 <dependency>
     <groupId>io.github.mkpaz</groupId>
     <artifactId>tm4java</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -47,17 +49,11 @@ repositories {
     mavenCentral()
 }
 dependencies {
-    implementation 'io.github.mkpaz:tm4java:1.0.0'
+    implementation 'io.github.mkpaz:tm4java:1.1.0'
 }
 ```
 
-### Dependencies
-
-The only dependency is [org.jruby.joni](https://github.com/jruby/joni) which is a port
-of [Oniguruma](https://github.com/kkos/oniguruma) regexp library, because the TextMate grammars
-are based on Oniguruma regular expressions.
-
-### Example
+Example:
 
 ```java
 // the registry is the main entry point; it's used to register grammars and set up a theme.
@@ -94,29 +90,18 @@ BiConsumer<String, IToken> printer = (line, token) -> {
     }
 };
 
-// For multiline text, there are two options:
-// - tokenize the whole text if it doesn't contain too many lines
-// - tokenize it line-by-line; in this case, the state should be maintained
+// For multiline text, you have two options:
+// - Tokenize the entire text at once if it is relatively short.
+// - Tokenize line by line, maintaining the grammar state between lines.
 IStateStack state = null;
-for(
-var line :text.
-
-split("\r?\n")){
-ITokenizeLineResult<IToken[]> result = grammar.tokenizeLine(line, state, Duration.ofSeconds(1));
-state =result.
-
-ruleStack();
-    Arrays.
-
-stream(result.tokens()).
-
-forEach(token ->printer.
-
-accept(line, token));
-    }
+for (var line : text.split("\r?\n")) {
+    ITokenizeLineResult<IToken[]> result = grammar.tokenizeLine(line, state, Duration.ofSeconds(1));
+    state = result.ruleStack();
+    Arrays.stream(result.tokens()).forEach(token -> printer.accept(line, token));
+}
 ```
 
-The result of this code is:
+This produces output like the following:
 
 ```text
 Token:	'public'
@@ -127,10 +112,14 @@ Scopes:	[source.java]
 Token:	'static'
 Scopes:	[source.java, storage.modifier.java]
 Style:	StyleAttributes{fontStyle=-1, foregroundId=5, backgroundId=0}
-...
+// ... etc.
 ```
 
-You can find the full version of this example in [UsageTest.java](src/test/java/tm4java/UsageTest.java).
+Use these style attributes to look up theme color values and apply them to your code editor component.
+
+See the full example in [UsageTest.java](src/test/java/tm4java/UsageTest.java).
+
+Refer to the accompanying [`tm4javafx`](https://github.com/mkpaz/tm4javafx) project for a more detailed example.
 
 ## Benchmark
 
@@ -175,8 +164,12 @@ mvn test -DskipTests -P benchmark
 
 ## Why fork?
 
-TM4E is not published in Maven Central, as Eclipse uses its own release ecosystem. It is not modularized
-because Eclipse uses OSGi instead of Java modules, and depends on both Google Gson and SnakeYAML.
+- Maven Central availability: TM4E is not published on Maven Central because Eclipse uses its own release
+  ecosystem. `tm4java` removes Eclipse-specific code, providing a cleaner modular structure along with Javadoc.
 
-The fork embeds NanoJson instead of Gson, removes unnecessary dependencies, offers an API to use a custom parser,
-eliminates Eclipse-specific code from the codebase, and provides a cleaner modular structure along with Javadoc.
+- Modularization and dependencies: TM4E is not modularized—as Eclipse relies on OSGi rather than Java modules and
+  has hard dependencies on both Google Gson and SnakeYAML. `tm4java` has no external dependencies; it embeds
+  NanoJson parser and also provides an API to use a custom parser.
+
+- Performance: TM4E uses Joni (a Java port of the Oniguruma regex library) to support TextMate grammar syntax.
+  `tm4java` uses the native Oniguruma library via FFM, making it 2.2x faster while using 65% less memory.
